@@ -20,6 +20,151 @@ from typing import Generator
 
 import gradio as gr
 
+
+# ── 다크 프로페셔널 테마 ─────────────────────────────────────────────────────
+class SilenceCutterDark(gr.themes.Base):
+    """FCP 계열 다크 프로페셔널 테마. 항상 다크 모드로 사용."""
+
+    def __init__(self):
+        super().__init__(
+            primary_hue=gr.themes.colors.blue,
+            secondary_hue=gr.themes.colors.slate,
+            neutral_hue=gr.themes.colors.slate,
+            font=(
+                gr.themes.GoogleFont("Inter"),
+                "ui-sans-serif",
+                "system-ui",
+                "sans-serif",
+            ),
+            font_mono=(
+                gr.themes.GoogleFont("JetBrains Mono"),
+                "ui-monospace",
+                "Consolas",
+                "monospace",
+            ),
+        )
+        self.set(
+            # ── 배경 ──
+            background_fill_primary_dark="#0f172a",
+            background_fill_secondary_dark="#1e293b",
+            body_background_fill_dark="#0f172a",
+            # ── 블록 / 패널 ──
+            block_background_fill_dark="#1e293b",
+            block_border_color_dark="#334155",
+            block_label_background_fill_dark="#1e293b",
+            block_label_border_color_dark="#334155",
+            block_label_text_color_dark="#94a3b8",
+            block_title_text_color_dark="#cbd5e1",
+            panel_background_fill_dark="#1e293b",
+            # ── 텍스트 ──
+            body_text_color_dark="#e2e8f0",
+            body_text_color_subdued_dark="#94a3b8",
+            # ── 입력 필드 ──
+            input_background_fill_dark="#0f172a",
+            input_background_fill_focus_dark="#1e293b",
+            input_border_color_dark="#334155",
+            input_border_color_focus_dark="#3b82f6",
+            input_placeholder_color_dark="#64748b",
+            # ── 보더 ──
+            border_color_primary_dark="#334155",
+            border_color_accent_dark="#3b82f6",
+            # ── 버튼 (Primary) ──
+            button_primary_background_fill_dark="#2563eb",
+            button_primary_background_fill_hover_dark="#1d4ed8",
+            button_primary_border_color_dark="#2563eb",
+            button_primary_text_color_dark="#ffffff",
+            # ── 버튼 (Secondary) ──
+            button_secondary_background_fill_dark="#334155",
+            button_secondary_background_fill_hover_dark="#475569",
+            button_secondary_border_color_dark="#475569",
+            button_secondary_text_color_dark="#e2e8f0",
+            # ── 버튼 (Cancel) ──
+            button_cancel_background_fill_dark="#334155",
+            button_cancel_background_fill_hover_dark="#475569",
+            button_cancel_border_color_dark="#475569",
+            button_cancel_text_color_dark="#e2e8f0",
+            # ── 체크박스 / 라디오 ──
+            checkbox_background_color_dark="#0f172a",
+            checkbox_background_color_selected_dark="#2563eb",
+            checkbox_border_color_dark="#475569",
+            checkbox_border_color_focus_dark="#3b82f6",
+            checkbox_border_color_selected_dark="#2563eb",
+            checkbox_label_background_fill_dark="#1e293b",
+            checkbox_label_background_fill_hover_dark="#334155",
+            checkbox_label_text_color_dark="#e2e8f0",
+            # ── 슬라이더 ──
+            slider_color_dark="#3b82f6",
+            # ── 테이블 ──
+            table_even_background_fill_dark="#1e293b",
+            table_odd_background_fill_dark="#0f172a",
+            table_border_color_dark="#334155",
+            table_row_focus_dark="#334155",
+            # ── 에러 ──
+            error_background_fill_dark="#1e293b",
+            error_border_color_dark="#ef4444",
+            error_text_color_dark="#fca5a5",
+            # ── 코드 블록 ──
+            code_background_fill_dark="#0f172a",
+            # ── 섀도우 / 기타 ──
+            block_shadow_dark="none",
+            shadow_spread_dark="0px",
+        )
+
+
+# JS: 강제 다크 모드 — localStorage에 설정하여 Gradio 내부 로직과 동기화
+_FORCE_DARK_JS = """
+document.documentElement.classList.add('dark');
+localStorage.setItem('theme', 'dark');
+"""
+
+# head 태그 — Gradio 렌더링 전에 다크 모드를 즉시 적용하여 깜빡임 방지
+_DARK_HEAD = """
+<script>
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+</script>
+<style>
+    html { background: #0f172a !important; }
+</style>
+"""
+
+# CSS: 보조 스타일
+_DARK_CSS = """
+/* status-box 모노스페이스 */
+.status-box textarea {
+    font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+}
+/* 탭 스타일 보정 */
+.tab-nav button {
+    font-weight: 500 !important;
+}
+.tab-nav button.selected {
+    border-color: #3b82f6 !important;
+    color: #e2e8f0 !important;
+}
+/* 파일 업로드 드롭존 */
+.upload-container {
+    border-color: #334155 !important;
+}
+/* Markdown 헤더 */
+.prose h1, .prose h2, .prose h3 {
+    color: #e2e8f0 !important;
+}
+.prose {
+    color: #cbd5e1 !important;
+}
+.prose strong {
+    color: #e2e8f0 !important;
+}
+/* 다크모드 토글 숨김 */
+.dark-mode-toggle, .light-dark-toggle {
+    display: none !important;
+}
+"""
+
+
 # ── 언어 매핑 ────────────────────────────────────────────────────────────────
 LANGUAGE_MAP = {
     "한국어": "Korean",
@@ -204,6 +349,7 @@ def run_silence_cut(
     font_size: int,
     export_itt: bool,
     project_name: str,
+    progress=gr.Progress(),
 ) -> tuple[list[str] | None, str]:
     """전체 파이프라인 실행 → 생성된 FCPXML (+ iTT) 반환. 단일/멀티 영상 자동 처리."""
     if video_files is None or (isinstance(video_files, list) and len(video_files) == 0):
@@ -294,6 +440,7 @@ def run_silence_cut(
 
     try:
         phase = "입력 확인"
+        progress(0.05, desc="입력 확인")
         log(f"입력 영상 {len(normalized_files)}개 확인")
         yield emit()
 
@@ -306,6 +453,7 @@ def run_silence_cut(
                 continue
 
             phase = f"영상 분석 ({file_idx}/{total_files})"
+            progress(0.05 + 0.05 * (file_idx - 1) / total_files, desc=phase)
             progress_label = None
             log(f"영상 분석 시작: {video_path.name}")
             yield emit()
@@ -318,6 +466,7 @@ def run_silence_cut(
             yield emit()
 
             phase = f"오디오 추출 ({file_idx}/{total_files})"
+            progress(0.10 + 0.05 * (file_idx - 1) / total_files, desc=phase)
             log("오디오 추출 시작")
             yield emit()
             audio_path = extract_audio(video_path)
@@ -326,6 +475,7 @@ def run_silence_cut(
             yield emit()
 
             phase = f"VAD 분석 ({file_idx}/{total_files})"
+            progress(0.15 + 0.10 * (file_idx - 1) / total_files, desc=phase)
             log("음성 구간 감지 시작")
             yield emit()
             speech_segments = detect_speech(
@@ -355,6 +505,7 @@ def run_silence_cut(
 
             if not transcriber_loaded:
                 phase = "ASR 준비"
+                progress(0.25, desc="ASR 모델 로딩")
                 progress_label = None
                 log("ASR 모델 로딩 시작")
                 yield emit()
@@ -367,6 +518,8 @@ def run_silence_cut(
             transcribed: list[TranscribedSegment] = []
             total_segments = len(speech_segments)
             for seg_idx, seg in enumerate(speech_segments, 1):
+                asr_progress = 0.30 + 0.50 * ((file_idx - 1) + (seg_idx - 1) / total_segments) / total_files
+                progress(asr_progress, desc=f"대본 추출 {seg_idx}/{total_segments}")
                 progress_label = f"파일 {file_idx}/{total_files} | 구간 {seg_idx - 1}/{total_segments}"
                 log(f"구간 전사 시작 ({seg_idx}/{total_segments}) {seg.start:.1f}s ~ {seg.end:.1f}s")
                 yield emit()
@@ -407,6 +560,7 @@ def run_silence_cut(
             output_path = tmp_dir / f"{video.video_path.stem}.fcpxml"
 
             phase = "FCPXML 생성"
+            progress(0.85, desc="FCPXML 생성")
             log(f"FCPXML 생성 시작: {output_path.name}")
             yield emit()
             generate_fcpxml(
@@ -427,6 +581,7 @@ def run_silence_cut(
 
             if export_itt:
                 phase = "iTT 생성"
+                progress(0.90, desc="iTT 생성")
                 itt_path = output_path.with_suffix(".itt")
                 log(f"iTT 생성 시작: {itt_path.name}")
                 yield emit()
@@ -443,6 +598,7 @@ def run_silence_cut(
             output_path = tmp_dir / f"{params['project_name']}_multi.fcpxml"
 
             phase = "멀티 FCPXML 생성"
+            progress(0.85, desc="멀티 FCPXML 생성")
             log(f"멀티 FCPXML 생성 시작: {output_path.name}")
             yield emit()
             generate_fcpxml_multi(
@@ -458,6 +614,7 @@ def run_silence_cut(
 
             if export_itt:
                 phase = "멀티 iTT 생성"
+                progress(0.90, desc="멀티 iTT 생성")
                 itt_path = output_path.with_suffix(".itt")
                 log(f"iTT 생성 시작: {itt_path.name}")
                 yield emit()
@@ -482,8 +639,10 @@ def run_silence_cut(
                 yield emit()
 
         phase = "완료"
+        progress(1.0, desc="완료")
         progress_label = None
         log("Final Cut Pro에서 File > Import > XML로 열 수 있습니다.")
+        gr.Info("✅ 처리 완료! 출력 파일을 다운로드하세요.")
         yield emit(output_files)
         return
 
@@ -624,6 +783,7 @@ def run_subtitle_only(
     max_subtitle_chars: int,
     export_srt: bool,
     export_itt: bool,
+    progress=gr.Progress(),
 ) -> tuple[list[str] | None, str]:
     """영상에서 자막만 생성 (SRT / iTT)."""
     if video_file is None:
@@ -666,10 +826,12 @@ def run_subtitle_only(
 
     try:
         phase = "입력 확인"
+        progress(0.05, desc="입력 확인")
         log(f"영상 확인: {video_path.name}")
         yield emit()
 
         phase = "오디오 추출"
+        progress(0.10, desc="오디오 추출")
         log("오디오 추출 시작")
         yield emit()
         audio_path = extract_audio(video_path)
@@ -677,6 +839,7 @@ def run_subtitle_only(
         yield emit()
 
         phase = "VAD 분석"
+        progress(0.20, desc="VAD 분석")
         log("음성 구간 감지 시작")
         yield emit()
         speech_segments = detect_speech(
@@ -705,6 +868,7 @@ def run_subtitle_only(
             return
 
         phase = "ASR 준비"
+        progress(0.25, desc="ASR 모델 로딩")
         progress_label = None
         log("ASR 모델 로딩 시작")
         yield emit()
@@ -721,6 +885,8 @@ def run_subtitle_only(
         transcribed: list[TranscribedSegment] = []
         total_segments = len(asr_segments)
         for idx, seg in enumerate(asr_segments, 1):
+            seg_progress = 0.30 + 0.55 * (idx - 1) / total_segments
+            progress(seg_progress, desc=f"자막 추출 {idx}/{total_segments}")
             progress_label = f"{idx - 1}/{total_segments}"
             log(f"구간 전사 시작 ({idx}/{total_segments}) {seg.start:.1f}s ~ {seg.end:.1f}s")
             yield emit()
@@ -768,7 +934,9 @@ def run_subtitle_only(
             yield emit()
 
         phase = "완료"
+        progress(1.0, desc="완료")
         log(f"자막 파일 {len(output_files)}개 생성 완료")
+        gr.Info("✅ 자막 생성 완료!")
         yield emit(output_files)
         return
 
@@ -796,6 +964,7 @@ def run_script_extract(
     max_subtitle_chars: int,
     with_timestamps: bool,
     export_itt: bool,
+    progress=gr.Progress(),
 ) -> tuple[list[str] | None, str, str]:
     """영상에서 대본 txt와 선택적 iTT 자막을 추출."""
     if video_file is None:
@@ -839,10 +1008,12 @@ def run_script_extract(
 
     try:
         phase = "입력 확인"
+        progress(0.05, desc="입력 확인")
         log(f"영상 확인: {video_path.name}")
         yield emit()
 
         phase = "오디오 추출"
+        progress(0.10, desc="오디오 추출")
         log("오디오 추출 시작")
         yield emit()
         audio_path = extract_audio(video_path)
@@ -850,6 +1021,7 @@ def run_script_extract(
         yield emit()
 
         phase = "VAD 분석"
+        progress(0.20, desc="VAD 분석")
         log("음성 구간 감지 시작")
         yield emit()
         segments = detect_speech(
@@ -872,6 +1044,7 @@ def run_script_extract(
 
         if asr_segments:
             phase = "ASR 준비"
+            progress(0.25, desc="ASR 모델 로딩")
             log("ASR 모델 로딩 시작")
             yield emit()
             transcriber = Transcriber(
@@ -886,6 +1059,8 @@ def run_script_extract(
             phase = "대본 추출"
             total = len(asr_segments)
             for idx, seg in enumerate(asr_segments, 1):
+                seg_progress = 0.30 + 0.55 * (idx - 1) / total
+                progress(seg_progress, desc=f"대본 추출 {idx}/{total}")
                 progress_label = f"{idx - 1}/{total}"
                 log(f"구간 전사 시작 ({idx}/{total}) {seg.start:.1f}s ~ {seg.end:.1f}s")
                 yield emit()
@@ -945,8 +1120,10 @@ def run_script_extract(
             yield emit(output_files)
 
         phase = "완료"
+        progress(1.0, desc="완료")
         progress_label = None
         log(f"파일 {len(output_files)}개 생성 완료")
+        gr.Info("✅ 대본 추출 완료!")
         yield emit(output_files)
         return
 
@@ -994,128 +1171,84 @@ def run_fcpxml_extract(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 공통 파라미터 위젯 팩토리
-# ─────────────────────────────────────────────────────────────────────────────
-def _make_common_params(include_vad: bool = True):
-    """언어/모델/자막 파라미터 위젯 반환 (딕셔너리)."""
-    language = gr.Dropdown(
-        choices=list(LANGUAGE_MAP.keys()),
-        value="한국어",
-        label="언어",
-    )
-    asr_model = gr.Dropdown(
-        choices=list(ASR_MODELS.keys()),
-        value=list(ASR_MODELS.keys())[0],
-        label="ASR 모델",
-    )
-
-    vad_widgets = {}
-    if include_vad:
-        padding = gr.Radio(
-            choices=list(PADDING_PRESETS.keys()),
-            value="보통 (100ms)",
-            label="패딩 프리셋",
-        )
-        vad_threshold = gr.Slider(
-            minimum=0.1, maximum=0.9, value=0.5, step=0.05,
-            label="VAD 임계값 (낮을수록 민감)",
-        )
-        min_silence = gr.Slider(
-            minimum=100, maximum=1000, value=300, step=50,
-            label="최소 무음 길이 (ms) — 이보다 짧은 무음은 유지",
-        )
-        vad_widgets = {
-            "padding": padding,
-            "vad_threshold": vad_threshold,
-            "min_silence": min_silence,
-        }
-
-    max_chars = gr.Slider(
-        minimum=10, maximum=40, value=20, step=1,
-        label="자막 최대 글자 수",
-    )
-    font_size = gr.Slider(
-        minimum=20, maximum=80, value=42, step=2,
-        label="자막 폰트 크기",
-    )
-    export_itt = gr.Checkbox(value=False, label="iTT 자막 파일 내보내기")
-    project_name = gr.Textbox(
-        value="SilenceCut",
-        label="프로젝트 이름",
-        placeholder="FCP 프로젝트 이름",
-    )
-
-    return {
-        "language": language,
-        "asr_model": asr_model,
-        **vad_widgets,
-        "max_chars": max_chars,
-        "font_size": font_size,
-        "export_itt": export_itt,
-        "project_name": project_name,
-    }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # UI 레이아웃
 # ─────────────────────────────────────────────────────────────────────────────
 def build_ui() -> gr.Blocks:
     with gr.Blocks(title="Silence Cutter") as demo:
 
         gr.Markdown(
-            """
-# Silence Cutter
-**Final Cut Pro용 무음 자동 편집 도구** — Silero VAD + Qwen3-ASR 기반
-
-영상에서 무음 구간을 감지·제거하고, 자막이 포함된 FCPXML을 생성합니다.
-
-- `무음 컷`: VAD 기반 무음 제거 + FCPXML 생성
-- `VAD 자막 생성`: VAD로 음성 구간을 찾은 뒤 원본 타임라인 기준 자막만 생성
-- `자막 재생성`: 편집된 FCPXML 기준으로 자막 다시 만들기
-- `VAD 대본 추출`: 영상에서 대본 txt만 추출
-- `FCPXML 자막 추출`: FCPXML 안의 title 텍스트를 txt로 추출
-            """.strip()
+            "# Silence Cutter\n"
+            "**Final Cut Pro용 무음 자동 편집 도구** — Silero VAD + Qwen3-ASR"
         )
 
-        # ── Tab 1: 무음 컷 ────────────────────────────────────────────────
+        # ── 메인 탭: 무음 컷 ──────────────────────────────────────────────
         with gr.Tab("무음 컷"):
             with gr.Row():
                 with gr.Column(scale=1):
                     t1_video = gr.File(
-                        label="영상 파일 업로드 (여러 개 가능)",
+                        label="영상 파일 (여러 개 가능)",
                         file_types=[".mp4", ".mov", ".mkv", ".avi", ".m4v"],
                         file_count="multiple",
                     )
 
-                    gr.Markdown("### 파라미터")
-                    w = _make_common_params(include_vad=True)
-                    t1_language = w["language"]
-                    t1_asr_model = w["asr_model"]
-                    t1_padding = w["padding"]
-                    t1_vad_threshold = w["vad_threshold"]
-                    t1_min_silence = w["min_silence"]
-                    t1_max_chars = w["max_chars"]
-                    t1_font_size = w["font_size"]
-                    t1_export_itt = w["export_itt"]
-                    t1_project_name = w["project_name"]
+                    t1_language = gr.Dropdown(
+                        choices=list(LANGUAGE_MAP.keys()),
+                        value="한국어",
+                        label="언어",
+                    )
+                    t1_asr_model = gr.Dropdown(
+                        choices=list(ASR_MODELS.keys()),
+                        value=list(ASR_MODELS.keys())[0],
+                        label="ASR 모델",
+                    )
+
+                    with gr.Accordion("고급 설정", open=False):
+                        t1_padding = gr.Radio(
+                            choices=list(PADDING_PRESETS.keys()),
+                            value="보통 (100ms)",
+                            label="패딩 프리셋",
+                        )
+                        t1_vad_threshold = gr.Slider(
+                            minimum=0.1, maximum=0.9, value=0.5, step=0.05,
+                            label="VAD 임계값 (낮을수록 민감)",
+                        )
+                        t1_min_silence = gr.Slider(
+                            minimum=100, maximum=1000, value=300, step=50,
+                            label="최소 무음 길이 (ms)",
+                        )
+                        t1_max_chars = gr.Slider(
+                            minimum=10, maximum=40, value=20, step=1,
+                            label="자막 최대 글자 수",
+                        )
+                        t1_font_size = gr.Slider(
+                            minimum=20, maximum=80, value=42, step=2,
+                            label="자막 폰트 크기",
+                        )
+                        t1_export_itt = gr.Checkbox(
+                            value=False, label="iTT 자막 내보내기",
+                        )
+                        t1_project_name = gr.Textbox(
+                            value="SilenceCut",
+                            label="프로젝트 이름",
+                            placeholder="FCP 프로젝트 이름",
+                        )
 
                     with gr.Row():
-                        t1_preview_btn = gr.Button("프리뷰 (VAD만)", variant="secondary")
+                        t1_preview_btn = gr.Button(
+                            "프리뷰 (VAD만)", variant="secondary",
+                        )
                         t1_run_btn = gr.Button("실행", variant="primary")
 
                 with gr.Column(scale=1):
-                    gr.Markdown("### 프리뷰: 감지된 음성 구간")
                     t1_preview_df = gr.Dataframe(
                         headers=["시작 (초)", "끝 (초)", "길이 (초)"],
                         datatype=["str", "str", "str"],
-                        label="음성 구간 목록",
+                        label="감지된 음성 구간",
                         interactive=False,
                         wrap=False,
                     )
-
-                    gr.Markdown("### 출력 파일")
                     t1_output_files = gr.File(
-                        label="다운로드",
+                        label="출력 파일",
                         file_count="multiple",
                         interactive=False,
                     )
@@ -1126,7 +1259,6 @@ def build_ui() -> gr.Blocks:
                         elem_classes=["status-box"],
                     )
 
-            # 프리뷰 버튼
             t1_preview_btn.click(
                 fn=preview_vad,
                 inputs=[
@@ -1138,8 +1270,6 @@ def build_ui() -> gr.Blocks:
                 ],
                 outputs=[t1_preview_df, t1_status],
             )
-
-            # 실행 버튼
             t1_run_btn.click(
                 fn=run_silence_cut,
                 inputs=[
@@ -1157,28 +1287,45 @@ def build_ui() -> gr.Blocks:
                 outputs=[t1_output_files, t1_status],
             )
 
-        # ── Tab 2: VAD 자막 생성 ─────────────────────────────────────────
+        # ── 보조 탭: VAD 자막 생성 ────────────────────────────────────────
         with gr.Tab("VAD 자막 생성"):
             with gr.Row():
                 with gr.Column(scale=1):
                     ts_video = gr.File(
-                        label="영상 파일 업로드",
+                        label="영상 파일",
                         file_types=[".mp4", ".mov", ".mkv", ".avi", ".m4v"],
                         file_count="single",
                     )
-                    gr.Markdown(
-                        "_VAD로 음성 구간을 먼저 감지한 뒤, 원본 영상 타임라인 기준으로 "
-                        "SRT/iTT 자막만 생성합니다. 무음 컷 FCPXML은 만들지 않습니다._"
+
+                    ts_language = gr.Dropdown(
+                        choices=list(LANGUAGE_MAP.keys()),
+                        value="한국어",
+                        label="언어",
+                    )
+                    ts_asr_model = gr.Dropdown(
+                        choices=list(ASR_MODELS.keys()),
+                        value=list(ASR_MODELS.keys())[0],
+                        label="ASR 모델",
                     )
 
-                    gr.Markdown("### 파라미터")
-                    ws = _make_common_params(include_vad=True)
-                    ts_language = ws["language"]
-                    ts_asr_model = ws["asr_model"]
-                    ts_padding = ws["padding"]
-                    ts_vad_threshold = ws["vad_threshold"]
-                    ts_min_silence = ws["min_silence"]
-                    ts_max_chars = ws["max_chars"]
+                    with gr.Accordion("고급 설정", open=False):
+                        ts_padding = gr.Radio(
+                            choices=list(PADDING_PRESETS.keys()),
+                            value="보통 (100ms)",
+                            label="패딩 프리셋",
+                        )
+                        ts_vad_threshold = gr.Slider(
+                            minimum=0.1, maximum=0.9, value=0.5, step=0.05,
+                            label="VAD 임계값",
+                        )
+                        ts_min_silence = gr.Slider(
+                            minimum=100, maximum=1000, value=300, step=50,
+                            label="최소 무음 길이 (ms)",
+                        )
+                        ts_max_chars = gr.Slider(
+                            minimum=10, maximum=40, value=20, step=1,
+                            label="자막 최대 글자 수",
+                        )
 
                     ts_export_srt = gr.Checkbox(value=True, label="SRT 내보내기")
                     ts_export_itt = gr.Checkbox(value=True, label="iTT 내보내기")
@@ -1186,9 +1333,8 @@ def build_ui() -> gr.Blocks:
                     ts_run_btn = gr.Button("실행", variant="primary")
 
                 with gr.Column(scale=1):
-                    gr.Markdown("### 출력 파일")
                     ts_output_files = gr.File(
-                        label="다운로드",
+                        label="출력 파일",
                         file_count="multiple",
                         interactive=False,
                     )
@@ -1215,33 +1361,45 @@ def build_ui() -> gr.Blocks:
                 outputs=[ts_output_files, ts_status],
             )
 
-        # ── Tab 3: 자막 재생성 ────────────────────────────────────────────
+        # ── 보조 탭: 자막 재생성 ──────────────────────────────────────────
         with gr.Tab("자막 재생성"):
             with gr.Row():
                 with gr.Column(scale=1):
                     t2_file = gr.File(
-                        label="FCPXML 파일 업로드 (.fcpxml 또는 .fcpxmld 내부 Info.fcpxml)",
+                        label="FCPXML 파일 (.fcpxml)",
                         file_types=[".fcpxml", ".xml"],
                         file_count="single",
                     )
-                    gr.Markdown(
-                        "_※ `.fcpxmld` 번들의 경우 번들 내부 `Info.fcpxml` 파일을 직접 선택하세요._"
+
+                    t2_language = gr.Dropdown(
+                        choices=list(LANGUAGE_MAP.keys()),
+                        value="한국어",
+                        label="언어",
+                    )
+                    t2_asr_model = gr.Dropdown(
+                        choices=list(ASR_MODELS.keys()),
+                        value=list(ASR_MODELS.keys())[0],
+                        label="ASR 모델",
                     )
 
-                    gr.Markdown("### 파라미터")
-                    w2 = _make_common_params(include_vad=False)
-                    t2_language = w2["language"]
-                    t2_asr_model = w2["asr_model"]
-                    t2_max_chars = w2["max_chars"]
-                    t2_font_size = w2["font_size"]
-                    t2_export_itt = w2["export_itt"]
+                    with gr.Accordion("고급 설정", open=False):
+                        t2_max_chars = gr.Slider(
+                            minimum=10, maximum=40, value=20, step=1,
+                            label="자막 최대 글자 수",
+                        )
+                        t2_font_size = gr.Slider(
+                            minimum=20, maximum=80, value=42, step=2,
+                            label="자막 폰트 크기",
+                        )
+                        t2_export_itt = gr.Checkbox(
+                            value=False, label="iTT 자막 내보내기",
+                        )
 
                     t2_run_btn = gr.Button("실행", variant="primary")
 
                 with gr.Column(scale=1):
-                    gr.Markdown("### 출력 파일")
                     t2_output_files = gr.File(
-                        label="다운로드",
+                        label="출력 파일",
                         file_count="multiple",
                         interactive=False,
                     )
@@ -1265,20 +1423,14 @@ def build_ui() -> gr.Blocks:
                 outputs=[t2_output_files, t2_status],
             )
 
-        # ── Tab 4: VAD 대본 추출 ─────────────────────────────────────────
+        # ── 보조 탭: VAD 대본 추출 ────────────────────────────────────────
         with gr.Tab("VAD 대본 추출"):
             with gr.Row():
                 with gr.Column(scale=1):
                     sc_video = gr.File(
-                        label="영상 파일 업로드",
+                        label="영상 파일",
                         file_types=[".mp4", ".mov", ".mkv", ".avi", ".m4v"],
                         file_count="single",
-                    )
-                    gr.Markdown(
-                        "_영상에서 오디오를 추출한 뒤 VAD로 음성 구간만 골라 ASR을 수행하고, "
-                        "원본 시간축 기준의 자막 라인 txt를 생성합니다. "
-                        "필요하면 Final Cut Pro용 iTT 자막도 함께 만들 수 있습니다. "
-                        "무음 구간은 전사 구간 분할에만 사용하고 타임코드는 자르지 않습니다._"
                     )
 
                     sc_language = gr.Dropdown(
@@ -1291,25 +1443,32 @@ def build_ui() -> gr.Blocks:
                         value=list(ASR_MODELS.keys())[0],
                         label="ASR 모델",
                     )
-                    sc_vad_threshold = gr.Slider(
-                        minimum=0.1, maximum=0.9, value=0.5, step=0.05,
-                        label="VAD 임계값 (낮을수록 민감)",
+
+                    with gr.Accordion("고급 설정", open=False):
+                        sc_vad_threshold = gr.Slider(
+                            minimum=0.1, maximum=0.9, value=0.5, step=0.05,
+                            label="VAD 임계값",
+                        )
+                        sc_min_silence = gr.Slider(
+                            minimum=100, maximum=1000, value=300, step=50,
+                            label="최소 무음 길이 (ms)",
+                        )
+                        sc_max_subtitle_chars = gr.Slider(
+                            minimum=8, maximum=40, value=20, step=1,
+                            label="자막 한 줄 최대 글자수",
+                        )
+
+                    sc_timestamps = gr.Checkbox(
+                        value=True, label="타임코드 포함",
                     )
-                    sc_min_silence = gr.Slider(
-                        minimum=100, maximum=1000, value=300, step=50,
-                        label="최소 무음 길이 (ms)",
+                    sc_export_itt = gr.Checkbox(
+                        value=False, label="iTT 자막 동시 생성",
                     )
-                    sc_max_subtitle_chars = gr.Slider(
-                        minimum=8, maximum=40, value=20, step=1,
-                        label="자막 한 줄 최대 글자수",
-                    )
-                    sc_timestamps = gr.Checkbox(value=True, label="타임코드 포함")
-                    sc_export_itt = gr.Checkbox(value=False, label="Final Cut용 iTT 자막 동시 생성")
                     sc_run_btn = gr.Button("실행", variant="primary")
 
                 with gr.Column(scale=1):
                     sc_output_file = gr.File(
-                        label="다운로드",
+                        label="출력 파일",
                         file_count="multiple",
                         interactive=False,
                     )
@@ -1340,25 +1499,23 @@ def build_ui() -> gr.Blocks:
                 outputs=[sc_output_file, sc_text, sc_status],
             )
 
-        # ── Tab 5: FCPXML 자막 추출 ─────────────────────────────────────
+        # ── 보조 탭: FCPXML 자막 추출 ─────────────────────────────────────
         with gr.Tab("FCPXML 자막 추출"):
             with gr.Row():
                 with gr.Column(scale=1):
                     ex_file = gr.File(
-                        label="FCPXML 파일 업로드 (.fcpxml 또는 .fcpxmld 내부 Info.fcpxml)",
+                        label="FCPXML 파일 (.fcpxml)",
                         file_types=[".fcpxml", ".xml"],
                         file_count="single",
                     )
-                    gr.Markdown(
-                        "_FCPXML 안에 들어 있는 `title` 자막 텍스트를 읽어 txt로 추출합니다. "
-                        "영상 ASR은 수행하지 않습니다._"
+                    ex_timestamps = gr.Checkbox(
+                        value=True, label="타임코드 포함",
                     )
-                    ex_timestamps = gr.Checkbox(value=True, label="타임코드 포함")
                     ex_run_btn = gr.Button("실행", variant="primary")
 
                 with gr.Column(scale=1):
                     ex_output_file = gr.File(
-                        label="다운로드",
+                        label="출력 파일",
                         file_count="single",
                         interactive=False,
                     )
@@ -1400,8 +1557,10 @@ def main() -> None:
         server_port=args.port,
         share=args.share,
         inbrowser=not args.no_browser,
-        theme=gr.themes.Soft(primary_hue="blue"),
-        css=".status-box textarea { font-family: monospace; font-size: 12px; }",
+        theme=SilenceCutterDark(),
+        css=_DARK_CSS,
+        js=_FORCE_DARK_JS,
+        head=_DARK_HEAD,
     )
 
 
