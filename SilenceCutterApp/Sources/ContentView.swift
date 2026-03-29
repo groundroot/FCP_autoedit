@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var analysisService = AnalysisService()
     @State private var bridgeStatus: String = ""
     @State private var isTesting = false
+    @State private var showFindReplace = false
 
     var body: some View {
         NavigationSplitView {
@@ -74,6 +75,12 @@ struct ContentView: View {
 
                 Divider()
 
+                // Find & Replace bar
+                if showFindReplace {
+                    FindReplaceView(analysisService: analysisService, isVisible: $showFindReplace)
+                    Divider()
+                }
+
                 // Toolbar
                 HStack {
                     Button("파일 열기") {
@@ -102,6 +109,11 @@ struct ContentView: View {
                     }
                     .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
                     Spacer()
+                    Button("무음 제거") {
+                        analysisService.removeDiscardedSegments()
+                    }
+                    .disabled(analysisService.segments.isEmpty)
+                    Spacer()
                     Menu("내보내기") {
                         ForEach(ExportFormat.allCases) { format in
                             Button(format.displayName) {
@@ -113,6 +125,14 @@ struct ContentView: View {
                 }
                 .padding(8)
             }
+        }
+        .background {
+            // Hidden button for Cmd+F keyboard shortcut
+            Button("") {
+                showFindReplace.toggle()
+            }
+            .keyboardShortcut("f", modifiers: .command)
+            .hidden()
         }
     }
 

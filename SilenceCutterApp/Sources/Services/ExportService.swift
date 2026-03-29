@@ -16,7 +16,7 @@ struct ExportService {
             let idx = index + 1
             let start = srtTimecode(segment.start)
             let end = srtTimecode(segment.end)
-            return "\(idx)\n\(start) --> \(end)\n\(segment.text)"
+            return "\(idx)\n\(start) --> \(end)\n\(segment.keptText)"
         }.joined(separator: "\n\n")
     }
 
@@ -139,7 +139,7 @@ struct ExportService {
         for segment in kept {
             let begin = ittTimecode(segment.start)
             let end = ittTimecode(segment.end)
-            let escapedText = xmlEscape(segment.text)
+            let escapedText = xmlEscape(segment.keptText)
             xml += "      <p begin=\"\(begin)\" end=\"\(end)\">\(escapedText)</p>\n"
         }
 
