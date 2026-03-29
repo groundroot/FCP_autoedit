@@ -1,0 +1,320 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.SilenceCutterApp-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/sources",
+      "importPath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/App.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/ContentView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/ExportFormat.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/Segment.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "SilenceCutterApp",
+      "moduleOutputPath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/Modules/SilenceCutterApp.swiftmodule",
+      "objects" : [
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/App.swift.o",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ContentView.swift.o",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ExportFormat.swift.o",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/Segment.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j14",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "SilenceCutterApp_main",
+        "-swift-version",
+        "6",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "silencecutterapp"
+      ],
+      "outputFileMapPath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/App.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ExportFormat.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/Segment.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/Modules/SilenceCutterApp.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/App.swift",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/ContentView.swift",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/ExportFormat.swift",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/Segment.swift"
+      ],
+      "tempsPath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "SilenceCutterApp" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "SilenceCutterApp",
+      "-package-name",
+      "silencecutterapp",
+      "-c",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/App.swift",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/ContentView.swift",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/ExportFormat.swift",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/Segment.swift",
+      "-I",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j14",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "SilenceCutterApp_main",
+      "-swift-version",
+      "6",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "silencecutterapp",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "SilenceCutterApp" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp-entitlement.plist"
+    },
+    "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/App.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/ContentView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/ExportFormat.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Models/Segment.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/sources"
+    },
+    "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/App.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ExportFormat.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/Segment.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.product/Objects.LinkFileList"
+    },
+    "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
