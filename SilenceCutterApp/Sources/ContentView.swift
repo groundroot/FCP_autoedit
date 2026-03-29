@@ -105,13 +105,68 @@ struct ContentView: View {
                     Menu("내보내기") {
                         ForEach(ExportFormat.allCases) { format in
                             Button(format.displayName) {
-                                // Export (S06)
+                                exportFile(format: format)
                             }
                         }
                     }
-                    .disabled(true)
+                    .disabled(analysisService.segments.isEmpty)
                 }
                 .padding(8)
+            }
+        }
+    }
+
+    // MARK: - Export
+
+    /// Opens NSSavePanel and writes the exported format file to disk.
+    private func exportFile(format: ExportFormat) {
+        let panel = NSSavePanel()
+
+        // Map format to UTType
+        switch format {
+        case .srt:
+            panel.allowedContentTypes = [.plainText]
+        case .fcpxml, .itt:
+            panel.allowedContentTypes = [.xml]
+        }
+
+        // Default filename from video name + format extension
+        let baseName: String
+        if let videoURL = videoModel.videoURL {
+            baseName = videoURL.deletingPathExtension().lastPathComponent
+        } else {
+            baseName = "export"
+        }
+        panel.nameFieldStringValue = "\(baseName).\(format.fileExtension)"
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+
+            let content: String
+            switch format {
+            case .srt:
+                content = ExportService.generateSRT(segments: analysisService.segments)
+            case .fcpxml:
+                // Use actual videoInfo if available, fall back to sensible defaults
+                let info = analysisService.videoInfo ?? VideoInfo(
+                    fps: 30,
+                    width: 1920,
+                    height: 1080,
+                    duration: 0
+                )
+                content = ExportService.generateFCPXML(
+                    segments: analysisService.segments,
+                    videoInfo: info,
+                    videoURL: videoModel.videoURL ?? URL(fileURLWithPath: "/unknown")
+                )
+            case .itt:
+                content = ExportService.generateITT(segments: analysisService.segments)
+            }
+
+            do {
+                try content.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                print("[ExportService] Failed to write \(format.fileExtension): \(error)")
             }
         }
     }
