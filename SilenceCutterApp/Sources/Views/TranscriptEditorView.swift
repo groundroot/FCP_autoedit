@@ -1,10 +1,19 @@
 import SwiftUI
 
-/// Interactive transcript editor replacing the read-only SegmentListView.
-/// Shows each segment as a row with a checkbox (keep/discard), time range, and tappable text that seeks.
+/// Vrew-style transcript editor with card-based clip layout.
+/// Shows each segment as a ClipCardView. Discarded clips collapse.
+/// Supports current-clip highlighting via currentTime.
 struct TranscriptEditorView: View {
     @Bindable var analysisService: AnalysisService
     var onSeek: (TimeInterval) -> Void
+    var currentTime: TimeInterval = 0
+
+    /// Computed index of the currently playing clip
+    private var activeClipIndex: Int? {
+        analysisService.segments.firstIndex { seg in
+            seg.isKept && currentTime >= seg.start && currentTime < seg.end
+        }
+    }
 
     var body: some View {
         if analysisService.segments.isEmpty {
@@ -14,66 +23,44 @@ struct TranscriptEditorView: View {
                 description: Text("음성이 감지되지 않았습니다.")
             )
         } else {
-            List(Array(analysisService.segments.enumerated()), id: \.element.id) { index, segment in
-                HStack(alignment: .top, spacing: 8) {
-                    Toggle("", isOn: $analysisService.segments[index].isKept)
-                        .toggleStyle(.checkbox)
-                        .labelsHidden()
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 2) {
-                            TimeField(seconds: $analysisService.segments[index].start)
-                            Text("–")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                            TimeField(seconds: $analysisService.segments[index].end)
-                            Button {
-                                onSeek(segment.start)
-                            } label: {
-                                Image(systemName: "play.circle")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        // Word-level editing if words exist, otherwise text field
-                        if segment.words.isEmpty {
-                            TextField("자막 텍스트", text: $analysisService.segments[index].text, axis: .vertical)
-                                .font(.body)
-                                .lineLimit(1...5)
-                                .textFieldStyle(.plain)
-                                .strikethrough(!segment.isKept)
-                        } else {
-                            WordFlowView(
-                                words: $analysisService.segments[index].words,
-                                disabled: !segment.isKept
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 4) {
+                        ForEach(Array(analysisService.segments.enumerated()), id: \.element.id) { index, segment in
+                            ClipCardView(
+                                index: index,
+                                segment: $analysisService.segments[index],
+                                onSeek: onSeek,
+                                onSplit: {
+                                    analysisService.splitSegment(at: index)
+                                },
+                                onMerge: index < analysisService.segments.count - 1 ? {
+                                    analysisService.mergeWithNext(at: index)
+                                } : nil,
+                                isActive: activeClipIndex == index
                             )
+                            .id(segment.id)
                         }
                     }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
                 }
-                .padding(.vertical, 2)
-                .opacity(segment.isKept ? 1.0 : 0.5)
-                .contextMenu {
-                    Button("클립 분할") {
-                        analysisService.splitSegment(at: index)
-                    }
-                    if index < analysisService.segments.count - 1 {
-                        Button("다음 클립과 병합") {
-                            analysisService.mergeWithNext(at: index)
+                .onChange(of: activeClipIndex) { _, newIndex in
+                    if let idx = newIndex, idx < analysisService.segments.count {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(analysisService.segments[idx].id, anchor: .center)
                         }
                     }
                 }
             }
-            .listStyle(.plain)
         }
     }
 }
 
-// MARK: - Time formatting
+// MARK: - Time formatting (shared)
 
 /// Format seconds as MM:SS.s (e.g. 01:23.4)
-private func formatTime(_ seconds: Double) -> String {
+func formatTime(_ seconds: Double) -> String {
     let totalSeconds = max(0, seconds)
     let minutes = Int(totalSeconds) / 60
     let secs = totalSeconds.truncatingRemainder(dividingBy: 60)
@@ -81,7 +68,7 @@ private func formatTime(_ seconds: Double) -> String {
 }
 
 /// Parse MM:SS.s format back to seconds. Returns nil if invalid.
-private func parseTime(_ string: String) -> Double? {
+func parseTime(_ string: String) -> Double? {
     let parts = string.split(separator: ":")
     guard parts.count == 2,
           let minutes = Double(parts[0]),
@@ -93,7 +80,7 @@ private func parseTime(_ string: String) -> Double? {
 }
 
 /// Editable time field that displays and parses MM:SS.s format.
-private struct TimeField: View {
+struct TimeField: View {
     @Binding var seconds: Double
     @State private var text: String = ""
     @FocusState private var isFocused: Bool
@@ -130,8 +117,9 @@ private struct TimeField: View {
 
 #Preview("With Segments") {
     @Previewable @State var service = AnalysisService()
-    TranscriptEditorView(analysisService: service, onSeek: { _ in })
-        .frame(width: 300, height: 300)
+    TranscriptEditorView(analysisService: service, onSeek: { _ in }, currentTime: 1.0)
+        .frame(width: 350, height: 500)
+        .preferredColorScheme(.dark)
         .onAppear {
             service.segments = [
                 Segment(start: 0.5, end: 3.2, text: "안녕하세요, 오늘은 날씨가 좋습니다."),
@@ -139,10 +127,4 @@ private struct TimeField: View {
                 Segment(start: 62.3, end: 65.7, text: "1분이 넘는 타임스탬프 예시"),
             ]
         }
-}
-
-#Preview("Empty") {
-    @Previewable @State var service = AnalysisService()
-    TranscriptEditorView(analysisService: service, onSeek: { _ in })
-        .frame(width: 300, height: 300)
 }

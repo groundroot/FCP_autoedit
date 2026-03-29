@@ -13,17 +13,21 @@ struct ContentView: View {
         NavigationSplitView {
             // Left panel — transcript / analysis
             VStack(spacing: 0) {
-                Text("Transcript")
-                    .font(.headline)
-                    .padding(.top)
-                    .padding(.bottom, 8)
+                HStack {
+                    Image(systemName: "text.quote")
+                        .foregroundStyle(.cyan)
+                    Text("Transcript")
+                        .font(.headline)
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 6)
 
                 Divider()
 
                 if analysisService.isAnalyzing {
                     AnalysisProgressView(progress: analysisService.progress)
                 } else if !analysisService.segments.isEmpty {
-                    TranscriptEditorView(analysisService: analysisService, onSeek: { videoModel.seek(to: $0) })
+                    TranscriptEditorView(analysisService: analysisService, onSeek: { videoModel.seek(to: $0) }, currentTime: videoModel.currentTime)
                 } else {
                     Spacer()
                     Text("영상을 불러오세요")
@@ -45,7 +49,7 @@ struct ContentView: View {
                     .padding(.vertical, 4)
                 }
 
-                // Bridge diagnostics
+                // Bridge diagnostics (hidden in production — use --test-bridge CLI)
                 if !bridgeStatus.isEmpty {
                     Text(bridgeStatus)
                         .font(.caption)
@@ -82,8 +86,8 @@ struct ContentView: View {
                 }
 
                 // Toolbar
-                HStack {
-                    Button("파일 열기") {
+                HStack(spacing: 12) {
+                    Button {
                         let panel = NSOpenPanel()
                         panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie]
                         panel.allowsMultipleSelection = false
@@ -92,34 +96,44 @@ struct ContentView: View {
                                 videoModel.loadVideo(url: url)
                             }
                         }
+                    } label: {
+                        Label("열기", systemImage: "folder")
                     }
-                    Spacer()
 
-                    Button("Bridge 테스트") {
-                        Task { await testBridge() }
-                    }
-                    .disabled(isTesting)
-
-                    Spacer()
-                    Button("분석 시작") {
+                    Button {
                         Task {
                             guard let url = videoModel.videoURL else { return }
                             await analysisService.analyze(videoURL: url)
                         }
+                    } label: {
+                        Label("분석", systemImage: "waveform.badge.magnifyingglass")
                     }
                     .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
+
                     Spacer()
-                    Button("무음 제거") {
+
+                    Button {
                         analysisService.removeDiscardedSegments()
+                    } label: {
+                        Label("무음 제거", systemImage: "scissors")
                     }
                     .disabled(analysisService.segments.isEmpty)
-                    Spacer()
-                    Menu("내보내기") {
+
+                    Button {
+                        showFindReplace.toggle()
+                    } label: {
+                        Label("찾기", systemImage: "magnifyingglass")
+                    }
+                    .disabled(analysisService.segments.isEmpty)
+
+                    Menu {
                         ForEach(ExportFormat.allCases) { format in
                             Button(format.displayName) {
                                 exportFile(format: format)
                             }
                         }
+                    } label: {
+                        Label("내보내기", systemImage: "square.and.arrow.up")
                     }
                     .disabled(analysisService.segments.isEmpty)
                 }
@@ -134,6 +148,7 @@ struct ContentView: View {
             .keyboardShortcut("f", modifiers: .command)
             .hidden()
         }
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - Export

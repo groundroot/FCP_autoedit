@@ -68,6 +68,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/ClipCardView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/FindReplaceView.swift"
         },
         {
@@ -110,6 +114,7 @@
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ExportService.swift.o",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/PythonBridge.swift.o",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/AnalysisProgressView.swift.o",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.swift.o",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/FindReplaceView.swift.o",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/TimelineBarView.swift.o",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/TranscriptEditorView.swift.o",
@@ -219,6 +224,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/FindReplaceView.swift.o"
         },
         {
@@ -255,6 +264,7 @@
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Services/ExportService.swift",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Services/PythonBridge.swift",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/AnalysisProgressView.swift",
+        "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/ClipCardView.swift",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/FindReplaceView.swift",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/TimelineBarView.swift",
         "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/TranscriptEditorView.swift",
@@ -287,6 +297,7 @@
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Services/ExportService.swift",
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Services/PythonBridge.swift",
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/AnalysisProgressView.swift",
+      "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/ClipCardView.swift",
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/FindReplaceView.swift",
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/TimelineBarView.swift",
       "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/TranscriptEditorView.swift",
@@ -435,6 +446,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/ClipCardView.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/FindReplaceView.swift"
         },
         {
@@ -478,6 +493,10 @@
         {
           "kind" : "file",
           "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/App.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.swift.o"
         },
         {
           "kind" : "file",

@@ -79,6 +79,13 @@
     "swift-dependencies": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/AnalysisProgressView.swiftdeps",
     "diagnostics": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/AnalysisProgressView.dia"
   },
+  "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/ClipCardView.swift": {
+    "dependencies": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.d",
+    "object": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.swift.o",
+    "swiftmodule": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView~partial.swiftmodule",
+    "swift-dependencies": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.swiftdeps",
+    "diagnostics": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/ClipCardView.dia"
+  },
   "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/Sources/Views/FindReplaceView.swift": {
     "dependencies": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/FindReplaceView.d",
     "object": "/Users/youngchanlee/test/tts/Qwen3-TTS-Mac-GeneLab/SilenceCutterApp/.build/arm64-apple-macosx/debug/SilenceCutterApp.build/FindReplaceView.swift.o",
