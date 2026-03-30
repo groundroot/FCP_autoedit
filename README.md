@@ -236,22 +236,9 @@ open dist/SilenciApp.app          # Launch
 
 1. Download `Silenci-vX.X.X-macOS.dmg` from [Releases](https://github.com/leeyc09/Silence-Cutter/releases)
 2. Open DMG → drag `SilenciApp` to Applications
-3. **Allow the app in macOS Security settings:**
-
-   > macOS blocks apps from unidentified developers by default.
-   > On first launch, you'll see **"SilenciApp cannot be opened"** — this is normal.
-
-   **Option A — System Settings (recommended):**
-   1. Open **System Settings** → **Privacy & Security**
-   2. Scroll down — you'll see *"SilenciApp" was blocked from use because it is not from an identified developer*
-   3. Click **Open Anyway** → confirm in the dialog
-
-   **Option B — Terminal:**
-   ```bash
-   xattr -cr /Applications/SilenciApp.app
-   ```
-
-4. Open the app — Homebrew, Python, ffmpeg, and AI models install automatically on first launch (~45s)
+3. **First launch:** Right-click (or Control+click) the app → **Open** → click **Open** in the dialog
+   > macOS shows "unidentified developer" warning for open-source apps. This is a one-time step — after this, the app opens normally.
+4. The app auto-installs Python, ffmpeg, and AI models on first launch (~1-2 min)
 
 ### First Launch — Auto Setup
 

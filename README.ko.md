@@ -166,22 +166,9 @@ open dist/SilenciApp.app          # 실행
 
 1. [Releases](https://github.com/leeyc09/Silence-Cutter/releases)에서 `Silenci-vX.X.X-macOS.dmg` 다운로드
 2. DMG 열기 → `SilenciApp`을 Applications 폴더에 드래그
-3. **macOS 보안 설정에서 앱 허용:**
-
-   > macOS는 확인되지 않은 개발자의 앱을 기본적으로 차단합니다.
-   > 처음 실행 시 **"SilenciApp을 열 수 없습니다"** 메시지가 나타나는 것은 정상입니다.
-
-   **방법 A — 시스템 설정 (권장):**
-   1. **시스템 설정** → **개인정보 보호 및 보안** 열기
-   2. 아래로 스크롤 — *"SilenciApp" 사용이 차단되었습니다* 메시지 확인
-   3. **그래도 열기** 클릭 → 확인 다이얼로그에서 승인
-
-   **방법 B — 터미널:**
-   ```bash
-   xattr -cr /Applications/SilenciApp.app
-   ```
-
-4. 앱 열기 — Homebrew, Python, ffmpeg, AI 모델이 첫 실행 시 자동 설치됩니다 (~45초)
+3. **첫 실행:** 앱을 우클릭(또는 Control+클릭) → **열기** → 다이얼로그에서 **열기** 클릭
+   > macOS는 오픈소스 앱에 "확인되지 않은 개발자" 경고를 표시합니다. 한 번만 하면 이후 정상적으로 열립니다.
+4. 첫 실행 시 Python, ffmpeg, AI 모델이 자동 설치됩니다 (~1-2분)
 
 ### 첫 실행 자동 설치
 
