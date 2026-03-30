@@ -177,6 +177,13 @@ struct ContentView: View {
                     }
                     .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
 
+                    Button {
+                        importFCPXML()
+                    } label: {
+                        Label(L10n.tr("toolbar.import_fcpxml"), systemImage: "doc.badge.arrow.up")
+                    }
+                    .disabled(analysisService.isAnalyzing)
+
                     Spacer()
 
                     Button {
@@ -226,6 +233,40 @@ struct ContentView: View {
         .onAppear {
             settings.load()
         }
+    }
+
+    // MARK: - Import FCPXML (Resub)
+
+    /// Opens an NSOpenPanel for .fcpxml files, then runs resub analysis.
+    private func importFCPXML() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.xml, .data]
+        panel.allowsMultipleSelection = false
+        panel.message = L10n.tr("toolbar.import_fcpxml_message")
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            // Try to load the source video from FCPXML for preview
+            if let videoURL = Self.findVideoInFCPXML(url) {
+                videoModel.loadVideo(url: videoURL)
+            }
+            settings.save()
+            analysisService.startResub(fcpxmlURL: url, environment: pythonEnv, settings: settings)
+        }
+    }
+
+    /// Parse FCPXML to find the source video file path.
+    private static func findVideoInFCPXML(_ fcpxmlURL: URL) -> URL? {
+        guard let data = try? Data(contentsOf: fcpxmlURL),
+              let xmlString = String(data: data, encoding: .utf8) else { return nil }
+
+        // Simple regex to find file:// URL in media-rep src
+        if let range = xmlString.range(of: #"file://[^"]*\.(mov|mp4|m4v|avi|mkv)"#, options: .regularExpression, range: nil, locale: nil) {
+            let urlString = String(xmlString[range])
+            if let url = URL(string: urlString), FileManager.default.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+        return nil
     }
 
     // MARK: - Export

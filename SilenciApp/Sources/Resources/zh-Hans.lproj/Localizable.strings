@@ -99,3 +99,7 @@
 "settings.font_size" = "字体大小";
 "settings.reset" = "恢复默认设置";
 "settings.seconds_unit" = "%d秒";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "导入FCPXML";
+"toolbar.import_fcpxml_message" = "选择已编辑的FCPXML文件重新生成字幕";

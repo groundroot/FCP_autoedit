@@ -145,6 +145,82 @@ final class AnalysisService {
         }
     }
 
+    /// Start resub (re-transcribe from edited FCPXML) in a tracked Task.
+    func startResub(fcpxmlURL: URL, environment: PythonEnvironment? = nil, settings: AnalysisSettings? = nil) {
+        analysisTask = Task {
+            await resub(fcpxmlURL: fcpxmlURL, environment: environment, settings: settings)
+        }
+    }
+
+    /// Re-transcribe an edited FCPXML — reads clip boundaries, runs ASR on each clip.
+    func resub(fcpxmlURL: URL, environment: PythonEnvironment? = nil, settings: AnalysisSettings? = nil) async {
+        guard !isAnalyzing else { return }
+        isAnalyzing = true
+        error = nil
+        segments = []
+        videoInfo = nil
+
+        let newBridge = PythonBridge()
+        bridge = newBridge
+
+        if case .ready(let pythonPath, let modulePath) = environment?.state {
+            newBridge.pythonPath = pythonPath
+            newBridge.projectRoot = modulePath
+        } else {
+            let fm = FileManager.default
+            var dir = URL(fileURLWithPath: fm.currentDirectoryPath)
+            var projectRoot = dir.path
+            for _ in 0..<5 {
+                let candidate = dir.appendingPathComponent("silence_cutter").path
+                if fm.fileExists(atPath: candidate) {
+                    projectRoot = dir.path
+                    break
+                }
+                dir = dir.deletingLastPathComponent()
+            }
+            newBridge.projectRoot = projectRoot
+        }
+
+        do {
+            try newBridge.start()
+            print("[AnalysisService] Python bridge started for resub")
+
+            let response = try await newBridge.call(
+                "resub",
+                params: [
+                    "fcpxml_path": .string(fcpxmlURL.path),
+                    "language": .string(settings?.language ?? "Korean"),
+                    "asr_model": .string(settings?.asrModel.rawValue ?? "mlx-community/Qwen3-ASR-0.6B-8bit"),
+                    "aligner_model": .string("mlx-community/Qwen3-ForcedAligner-0.6B-8bit"),
+                    "max_segment_seconds": .double(settings?.maxSegmentSeconds ?? 8.0),
+                ],
+                timeout: 600,
+                as: AnalyzeResponse.self
+            )
+
+            self.segments = response.segments
+            self.videoInfo = response.videoInfo
+
+            print("[AnalysisService] ✅ Resub complete: \(segments.count) segments")
+
+            newBridge.stop()
+        } catch {
+            let msg = String(describing: error)
+            if Task.isCancelled {
+                self.error = nil
+                print("[AnalysisService] ⛔ Resub cancelled")
+            } else {
+                self.error = msg
+                print("[AnalysisService] ❌ Resub failed: \(msg)")
+            }
+            newBridge.stop()
+        }
+
+        bridge = nil
+        isAnalyzing = false
+        analysisTask = nil
+    }
+
     // MARK: - Segment editing
 
     /// Split a segment at a given word index. Words before the index stay in the original,

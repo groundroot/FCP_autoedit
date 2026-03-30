@@ -99,3 +99,7 @@
 "settings.font_size" = "Font Size";
 "settings.reset" = "Reset to Defaults";
 "settings.seconds_unit" = "%ds";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "Import FCPXML";
+"toolbar.import_fcpxml_message" = "Select an edited FCPXML file to re-transcribe";

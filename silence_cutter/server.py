@@ -478,6 +478,195 @@ def _deserialize_segments(raw: list[dict]) -> list:
     return segments
 
 
+def handle_resub(params: dict) -> dict:
+    """편집된 FCPXML을 읽고, 각 클립을 다시 ASR → 세그먼트 반환.
+
+    params:
+        fcpxml_path: str — 편집된 FCPXML 경로
+        language: str (optional, default "Korean")
+        asr_model: str (optional)
+        aligner_model: str (optional)
+        max_segment_seconds: float (optional, default 8)
+
+    returns:
+        segments: list[{start, end, text, words: [{text, start, end}]}]
+        video_info: {fps, width, height, duration}
+    """
+    import subprocess as _sp
+    import xml.etree.ElementTree as ET
+    from urllib.parse import unquote, urlparse
+
+    from .vad import extract_audio
+    from .transcribe import Transcriber, WordTimestamp, merge_orphan_josa
+
+    fcpxml_path = params.get("fcpxml_path")
+    if not fcpxml_path:
+        raise ValueError("fcpxml_path is required")
+
+    _progress("analyze", 0, "Reading FCPXML…")
+
+    # 1. Parse FCPXML
+    tree = ET.parse(str(fcpxml_path))
+    root = tree.getroot()
+
+    # Find source video
+    video_path = None
+    for media_rep in root.iter("media-rep"):
+        src = media_rep.get("src", "")
+        if src.startswith("file://"):
+            parsed = urlparse(src)
+            path_str = unquote(parsed.path)
+            from pathlib import Path as _P
+            p = _P(path_str)
+            if p.exists():
+                video_path = str(p)
+                break
+
+    if not video_path:
+        raise FileNotFoundError("Cannot find source video in FCPXML")
+
+    # Probe video info
+    _progress("analyze", 5, "Probing video…")
+    probe_result = _sp.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json",
+         "-show_format", "-show_streams", str(video_path)],
+        capture_output=True, text=True, check=True,
+    )
+    probe = json.loads(probe_result.stdout)
+    fps = 24.0
+    width, height = 1920, 1080
+    for stream in probe.get("streams", []):
+        if stream.get("codec_type") == "video":
+            rfr = stream.get("r_frame_rate", "24/1")
+            num, den = map(int, rfr.split("/"))
+            if den > 0:
+                fps = num / den
+            width = int(stream.get("width", 1920))
+            height = int(stream.get("height", 1080))
+            rotation = 0
+            for sd in stream.get("side_data_list", []):
+                if "rotation" in sd:
+                    rotation = abs(int(sd["rotation"]))
+            if rotation in (90, 270):
+                width, height = height, width
+            break
+    duration = float(probe.get("format", {}).get("duration", 0))
+
+    # 2. Extract audio
+    _progress("analyze", 10, "Extracting audio…")
+    audio_path = extract_audio(video_path)
+
+    # 3. Parse spine → get clip source time ranges
+    def _parse_time(s):
+        if s is None:
+            return 0.0
+        s = s.strip().rstrip("s")
+        if "/" in s:
+            num, den = s.split("/")
+            return int(num) / int(den)
+        return float(s)
+
+    spine = root.find(".//spine")
+    if spine is None:
+        raise ValueError("No spine found in FCPXML")
+
+    clips = []
+    for clip in spine.findall("asset-clip"):
+        src_start = _parse_time(clip.get("start", "0s"))
+        clip_dur = _parse_time(clip.get("duration", "0s"))
+        src_end = src_start + clip_dur
+        timeline_offset = _parse_time(clip.get("offset", "0s"))
+        clips.append({
+            "src_start": src_start,
+            "src_end": src_end,
+            "timeline_offset": timeline_offset,
+            "duration": clip_dur,
+        })
+
+    if not clips:
+        try:
+            from pathlib import Path as _P
+            _P(audio_path).unlink()
+        except OSError:
+            pass
+        return {
+            "segments": [],
+            "video_info": {"fps": fps, "width": width, "height": height, "duration": duration},
+        }
+
+    _progress("analyze", 15, f"Found {len(clips)} clips")
+
+    # 4. ASR each clip
+    max_seg_sec = params.get("max_segment_seconds", 8.0)
+    transcriber = Transcriber(
+        asr_model=params.get("asr_model", "mlx-community/Qwen3-ASR-0.6B-8bit"),
+        aligner_model=params.get("aligner_model", "mlx-community/Qwen3-ForcedAligner-0.6B-8bit"),
+        language=params.get("language", "Korean"),
+        on_progress=lambda phase, pct, detail: _progress(phase, pct, detail),
+    )
+
+    all_words = []
+    total = len(clips)
+    for i, clip in enumerate(clips):
+        pct = 20 + int(60 * (i / total))
+        _progress("analyze", pct, f"Transcribing clip ({i + 1}/{total})")
+
+        result = transcriber.transcribe_segment(audio_path, clip["src_start"], clip["src_end"])
+        if result.words:
+            all_words.extend(result.words)
+        elif result.text:
+            all_words.append(WordTimestamp(
+                text=result.text, start=result.seg_start, end=result.seg_end,
+            ))
+
+    if not all_words:
+        try:
+            from pathlib import Path as _P
+            _P(audio_path).unlink()
+        except OSError:
+            pass
+        _progress("analyze", 100, "No speech detected")
+        return {
+            "segments": [],
+            "video_info": {"fps": fps, "width": width, "height": height, "duration": duration},
+        }
+
+    # 5. Split words into segments (same as handle_analyze)
+    _progress("analyze", 85, "Splitting into segments…")
+    raw_segments = _split_words_into_segments(all_words, max_seg_sec)
+
+    # Orphan josa merge (Korean)
+    lang = params.get("language", "Korean")
+    if lang.lower() in ("korean", "ko"):
+        raw_segments = merge_orphan_josa(raw_segments)
+
+    # 6. Build response
+    _progress("analyze", 95, "Building response…")
+    out_segments = []
+    for seg in raw_segments:
+        out_segments.append({
+            "start": seg.seg_start,
+            "end": seg.seg_end,
+            "text": seg.text,
+            "words": [
+                {"text": w.text, "start": w.start, "end": w.end}
+                for w in seg.words
+            ],
+        })
+
+    try:
+        from pathlib import Path as _P
+        _P(audio_path).unlink()
+    except OSError:
+        pass
+
+    _progress("analyze", 100, "Done")
+    return {
+        "segments": out_segments,
+        "video_info": {"fps": fps, "width": width, "height": height, "duration": duration},
+    }
+
+
 # ---------------------------------------------------------------------------
 # 메서드 라우터
 # ---------------------------------------------------------------------------
@@ -486,6 +675,7 @@ METHOD_TABLE: dict[str, Any] = {
     "ping": handle_ping,
     "echo": handle_echo,
     "analyze": handle_analyze,
+    "resub": handle_resub,
     "vad_only": handle_vad_only,
     "export_fcpxml": handle_export_fcpxml,
     "export_srt": handle_export_srt,

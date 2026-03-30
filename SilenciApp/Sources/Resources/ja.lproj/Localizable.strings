@@ -99,3 +99,7 @@
 "settings.font_size" = "フォントサイズ";
 "settings.reset" = "デフォルトに戻す";
 "settings.seconds_unit" = "%d秒";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "FCPXML読み込み";
+"toolbar.import_fcpxml_message" = "編集済みFCPXMLファイルを選択して再文字起こし";

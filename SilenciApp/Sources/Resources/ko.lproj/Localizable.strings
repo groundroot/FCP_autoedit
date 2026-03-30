@@ -99,3 +99,7 @@
 "settings.font_size" = "폰트 크기";
 "settings.reset" = "기본값으로 초기화";
 "settings.seconds_unit" = "%d초";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "FCPXML 가져오기";
+"toolbar.import_fcpxml_message" = "편집된 FCPXML 파일을 선택하여 대본을 재생성합니다";
