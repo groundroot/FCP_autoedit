@@ -118,7 +118,7 @@ fi
 if command -v create-dmg &>/dev/null; then
     echo ""
     echo "[7/8] Creating DMG installer…"
-    DMG_PATH="$DIST_DIR/Silenci-v0.3.0-macOS.dmg"
+    DMG_PATH="$DIST_DIR/Silenci-v0.3.1-macOS.dmg"
     rm -f "$DMG_PATH"
 
     create-dmg \
