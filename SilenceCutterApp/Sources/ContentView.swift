@@ -270,7 +270,7 @@ struct ContentView: View {
             let content: String
             switch format {
             case .srt:
-                content = ExportService.generateSRT(segments: analysisService.segments)
+                content = ExportService.generateSRT(segments: analysisService.segments, maxSubtitleChars: settings.maxSubtitleChars)
             case .fcpxml:
                 // Use actual videoInfo if available, fall back to sensible defaults
                 let info = analysisService.videoInfo ?? VideoInfo(
@@ -287,7 +287,7 @@ struct ContentView: View {
                     maxSubtitleChars: settings.maxSubtitleChars
                 )
             case .itt:
-                content = ExportService.generateITT(segments: analysisService.segments, fps: analysisService.videoInfo?.fps ?? 24.0)
+                content = ExportService.generateITT(segments: analysisService.segments, fps: analysisService.videoInfo?.fps ?? 24.0, maxSubtitleChars: settings.maxSubtitleChars)
             }
 
             do {

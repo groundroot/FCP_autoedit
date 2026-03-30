@@ -78,19 +78,40 @@ struct ExportService {
 
     /// Generates an SRT subtitle string from kept segments.
     /// Timecodes are remapped to the edited timeline (gaps removed).
-    static func generateSRT(segments: [Segment]) -> String {
+    static func generateSRT(segments: [Segment], maxSubtitleChars: Int = 20) -> String {
         let kept = segments.filter(\.isKept)
         guard !kept.isEmpty else { return "" }
 
+        var entries: [String] = []
+        var idx = 1
         var offset: Double = 0
-        return kept.enumerated().map { index, segment in
-            let idx = index + 1
-            let duration = segment.end - segment.start
-            let start = srtTimecode(offset)
-            let end = srtTimecode(offset + duration)
-            offset += duration
-            return "\(idx)\n\(start) --> \(end)\n\(segment.exportText)"
-        }.joined(separator: "\n\n")
+
+        for segment in kept {
+            let segDur = segment.end - segment.start
+            let chunks = segment.words.isEmpty
+                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: 0, segEnd: segDur)
+                : subtitleChunksFromWords(segment.words.filter(\.isKept), maxChars: maxSubtitleChars)
+
+            if chunks.isEmpty {
+                // No words — single entry for entire segment
+                let start = srtTimecode(offset)
+                let end = srtTimecode(offset + segDur)
+                entries.append("\(idx)\n\(start) --> \(end)\n\(segment.exportText)")
+                idx += 1
+            } else {
+                // Chunk-relative timing: shift to timeline offset
+                let segStartAbs = segment.start
+                for chunk in chunks {
+                    let chunkStart = offset + (chunk.start - segStartAbs)
+                    let chunkEnd = offset + (chunk.end - segStartAbs)
+                    entries.append("\(idx)\n\(srtTimecode(chunkStart)) --> \(srtTimecode(chunkEnd))\n\(chunk.text)")
+                    idx += 1
+                }
+            }
+            offset += segDur
+        }
+
+        return entries.joined(separator: "\n\n")
     }
 
     private static func srtTimecode(_ seconds: Double) -> String {
@@ -246,7 +267,7 @@ struct ExportService {
     /// Generates an iTT (TTML-based) subtitle string from kept segments.
     /// Matches Python itt.py output with proper styling, layout, and region.
     /// Timecodes are remapped to the edited timeline (gaps removed).
-    static func generateITT(segments: [Segment], fps: Double = 24.0) -> String {
+    static func generateITT(segments: [Segment], fps: Double = 24.0, maxSubtitleChars: Int = 20) -> String {
         let kept = segments.filter(\.isKept)
 
         // Compute frameRate and frameRateMultiplier for FCP compatibility
@@ -288,12 +309,26 @@ struct ExportService {
 
         var offset: Double = 0
         for segment in kept {
-            let duration = segment.end - segment.start
-            let begin = ittTimecode(offset)
-            let end = ittTimecode(offset + duration)
-            let escapedText = xmlEscape(segment.exportText)
-            xml += "      <p begin=\"\(begin)\" end=\"\(end)\" region=\"bottom\" style=\"default\">\(escapedText)</p>\n"
-            offset += duration
+            let segDur = segment.end - segment.start
+            let chunks = segment.words.isEmpty
+                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: 0, segEnd: segDur)
+                : subtitleChunksFromWords(segment.words.filter(\.isKept), maxChars: maxSubtitleChars)
+
+            if chunks.isEmpty {
+                let begin = ittTimecode(offset)
+                let end = ittTimecode(offset + segDur)
+                let escapedText = xmlEscape(segment.exportText)
+                xml += "      <p begin=\"\(begin)\" end=\"\(end)\" region=\"bottom\" style=\"default\">\(escapedText)</p>\n"
+            } else {
+                let segStartAbs = segment.start
+                for chunk in chunks {
+                    let chunkStart = offset + (chunk.start - segStartAbs)
+                    let chunkEnd = offset + (chunk.end - segStartAbs)
+                    let escapedText = xmlEscape(chunk.text)
+                    xml += "      <p begin=\"\(ittTimecode(chunkStart))\" end=\"\(ittTimecode(chunkEnd))\" region=\"bottom\" style=\"default\">\(escapedText)</p>\n"
+                }
+            }
+            offset += segDur
         }
 
         xml += """
