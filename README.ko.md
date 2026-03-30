@@ -276,6 +276,12 @@ silence-cutter extract timeline.fcpxml -t -o script.txt
 >
 > 무음이 제거된 타임라인과 자막이 자동으로 로드됩니다.
 
+<div align="center">
+<img src="docs/fcp-import.jpg" width="720" alt="Final Cut Pro에서 FCPXML + iTT 자막 임포트"/>
+
+*FCPXML 타임라인 + iTT 자막이 Final Cut Pro에 로드된 모습*
+</div>
+
 ---
 
 ## 📥 설치

@@ -270,6 +270,12 @@ silence-cutter extract timeline.fcpxml -t -o script.txt
 >
 > The silence-removed timeline with embedded subtitles loads automatically.
 
+<div align="center">
+<img src="docs/fcp-import.jpg" width="720" alt="FCPXML and iTT subtitles imported in Final Cut Pro"/>
+
+*FCPXML timeline + iTT subtitles in Final Cut Pro*
+</div>
+
 ---
 
 ## 📥 Installation
