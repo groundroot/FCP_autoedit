@@ -51,7 +51,9 @@ echo "[4/5] Bundling SwiftPM resources…"
 RESOURCE_BUNDLE=$(find "$SWIFT_PKG/.build" -name "SilenciApp_SilenciApp.bundle" -type d | head -1)
 if [ -n "$RESOURCE_BUNDLE" ]; then
     cp -R "$RESOURCE_BUNDLE" "$CONTENTS/Resources/"
-    echo "  ✅ $(basename "$RESOURCE_BUNDLE") → Resources/"
+    # Also copy to MacOS/ — Bundle.main.bundleURL points to Contents/MacOS/ in .app bundles
+    cp -R "$RESOURCE_BUNDLE" "$CONTENTS/MacOS/"
+    echo "  ✅ $(basename "$RESOURCE_BUNDLE") → Resources/ + MacOS/"
 else
     echo "  ⚠️ No SwiftPM resource bundle found (localization may not work)"
 fi
