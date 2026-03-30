@@ -11,7 +11,7 @@
   <text x="400" y="32" text-anchor="middle" fill="#e2e8f0" font-family="system-ui,sans-serif" font-size="16" font-weight="700">Waveform — Before &amp; After</text>
 
   <!-- Before: full waveform with silence -->
-  <text x="30" y="68" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11" font-weight="600">Before (원본)</text>
+  <text x="30" y="68" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11" font-weight="600">Before (Original)</text>
 
   <!-- Waveform bars with gaps representing silence -->
   <g transform="translate(30,75)">
@@ -101,13 +101,13 @@
 
     <!-- Legend -->
     <rect x="560" y="5" width="10" height="10" rx="2" fill="#3b82f6"/>
-    <text x="575" y="14" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="10">음성</text>
+    <text x="575" y="14" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="10">Speech</text>
     <rect x="610" y="5" width="10" height="10" rx="2" fill="#ef4444" opacity="0.3"/>
-    <text x="625" y="14" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="10">무음 (제거)</text>
+    <text x="625" y="14" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="10">Silence (removed)</text>
   </g>
 
   <!-- After: compact waveform -->
-  <text x="30" y="142" fill="#4ade80" font-family="system-ui,sans-serif" font-size="11" font-weight="600">After (편집 후)</text>
+  <text x="30" y="142" fill="#4ade80" font-family="system-ui,sans-serif" font-size="11" font-weight="600">After (Edited)</text>
 
   <g transform="translate(30,148)">
     <!-- Speech 1 (same) -->
@@ -166,6 +166,6 @@
     <rect x="240" y="9" width="4" height="14" rx="1" fill="#22c55e" opacity="0.65"/>
 
     <!-- Compression indicator -->
-    <text x="290" y="20" fill="#4ade80" font-family="system-ui,sans-serif" font-size="12" font-weight="700">▸ 46% 단축</text>
+    <text x="290" y="20" fill="#4ade80" font-family="system-ui,sans-serif" font-size="12" font-weight="700">▸ 46% shorter</text>
   </g>
 </svg>

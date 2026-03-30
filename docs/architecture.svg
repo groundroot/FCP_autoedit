@@ -35,7 +35,7 @@
 
   <rect x="60" y="240" width="310" height="45" rx="8" fill="#0f172a" stroke="#22c55e" stroke-width="1.5"/>
   <text x="215" y="261" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="12" font-weight="600">PythonEnvironment</text>
-  <text x="215" y="277" text-anchor="middle" fill="#475569" font-family="system-ui,sans-serif" font-size="10">venv 자동 설치 · 버전 관리</text>
+  <text x="215" y="277" text-anchor="middle" fill="#475569" font-family="system-ui,sans-serif" font-size="10">Auto venv install · version mgmt</text>
 
   <!-- Communication arrows -->
   <path d="M390,195 L510,195" stroke="#f59e0b" stroke-width="3" fill="none" marker-end="url(#arrow2)"/>
@@ -49,7 +49,7 @@
 
   <rect x="530" y="110" width="310" height="45" rx="8" fill="#0f172a" stroke="#22c55e" stroke-width="1.5"/>
   <text x="685" y="131" text-anchor="middle" fill="#4ade80" font-family="system-ui,sans-serif" font-size="12" font-weight="600">silence_cutter.server</text>
-  <text x="685" y="147" text-anchor="middle" fill="#475569" font-family="system-ui,sans-serif" font-size="10">JSON-RPC 라우터</text>
+  <text x="685" y="147" text-anchor="middle" fill="#475569" font-family="system-ui,sans-serif" font-size="10">JSON-RPC Router</text>
 
   <rect x="530" y="175" width="145" height="45" rx="8" fill="#0f172a" stroke="#475569" stroke-width="1"/>
   <text x="602" y="196" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">Silero VAD</text>

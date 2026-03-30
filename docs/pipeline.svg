@@ -41,7 +41,7 @@
   <!-- Step 1: Video Input -->
   <rect x="40" y="75" width="160" height="70" rx="12" fill="url(#blue)" filter="url(#shadow)"/>
   <text x="120" y="103" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">🎬</text>
-  <text x="120" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">영상 입력</text>
+  <text x="120" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Video Input</text>
 
   <!-- Arrow 1→2 -->
   <path d="M200,110 L250,110" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)"/>
@@ -49,7 +49,7 @@
   <!-- Step 2: Audio Extract -->
   <rect x="260" y="75" width="160" height="70" rx="12" fill="url(#cyan)" filter="url(#shadow)"/>
   <text x="340" y="103" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">🔊</text>
-  <text x="340" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">오디오 추출</text>
+  <text x="340" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Audio Extract</text>
   <text x="340" y="162" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">ffmpeg → 16kHz WAV</text>
 
   <!-- Arrow 2→3 -->
@@ -58,7 +58,7 @@
   <!-- Step 3: VAD -->
   <rect x="480" y="75" width="160" height="70" rx="12" fill="url(#green)" filter="url(#shadow)"/>
   <text x="560" y="103" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">🎯</text>
-  <text x="560" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">음성 감지 (VAD)</text>
+  <text x="560" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Voice Detection (VAD)</text>
   <text x="560" y="162" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">Silero VAD</text>
 
   <!-- Arrow 3→4 -->
@@ -67,7 +67,7 @@
   <!-- Step 4: ASR -->
   <rect x="700" y="75" width="160" height="70" rx="12" fill="url(#purple)" filter="url(#shadow)"/>
   <text x="780" y="103" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">🗣️</text>
-  <text x="780" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">음성 인식 (ASR)</text>
+  <text x="780" y="128" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Speech Recognition (ASR)</text>
   <text x="780" y="162" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">Qwen3-ASR (MLX)</text>
 
   <!-- Arrow 4→5 (down) -->
@@ -76,7 +76,7 @@
   <!-- Step 5: Word Alignment -->
   <rect x="480" y="185" width="180" height="70" rx="12" fill="url(#purple)" filter="url(#shadow)" opacity="0.9"/>
   <text x="570" y="213" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">⏱️</text>
-  <text x="570" y="238" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">단어 타임스탬프</text>
+  <text x="570" y="238" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Word Timestamps</text>
   <text x="570" y="272" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">Qwen3-ForcedAligner</text>
 
   <!-- Arrow 5→6 (down) -->
@@ -85,8 +85,8 @@
   <!-- Step 6: Subtitle Split -->
   <rect x="480" y="320" width="180" height="70" rx="12" fill="url(#orange)" filter="url(#shadow)"/>
   <text x="570" y="348" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="22">✂️</text>
-  <text x="570" y="373" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">자막 분할</text>
-  <text x="570" y="407" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">종결어미 · 구두점 기반</text>
+  <text x="570" y="373" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="13" font-weight="600">Subtitle Split</text>
+  <text x="570" y="407" text-anchor="middle" fill="#94a3b8" font-family="system-ui,sans-serif" font-size="11">Sentence ending · punctuation based</text>
 
   <!-- Arrows to outputs -->
   <path d="M480,355 L320,355 L320,420" stroke="#475569" stroke-width="2.5" fill="none" marker-end="url(#arrowhead)"/>
@@ -104,7 +104,7 @@
   <!-- Output: SRT -->
   <rect x="250" y="430" width="140" height="60" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
   <text x="320" y="455" text-anchor="middle" fill="#22c55e" font-family="system-ui,sans-serif" font-size="14" font-weight="700">.srt</text>
-  <text x="320" y="475" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="11">SubRip 자막</text>
+  <text x="320" y="475" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="11">SubRip Subtitle</text>
 
   <!-- Output: iTT -->
   <rect x="460" y="430" width="140" height="60" rx="10" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
@@ -114,5 +114,5 @@
   <!-- Output: TXT -->
   <rect x="670" y="430" width="140" height="60" rx="10" fill="#1e293b" stroke="#f97316" stroke-width="2"/>
   <text x="740" y="455" text-anchor="middle" fill="#f97316" font-family="system-ui,sans-serif" font-size="14" font-weight="700">.txt</text>
-  <text x="740" y="475" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="11">대본 텍스트</text>
+  <text x="740" y="475" text-anchor="middle" fill="#64748b" font-family="system-ui,sans-serif" font-size="11">Plain Text Script</text>
 </svg>
