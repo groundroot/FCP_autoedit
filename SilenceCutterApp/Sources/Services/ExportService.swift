@@ -163,13 +163,14 @@ struct ExportService {
 
             guard clipDur.0 > 0 else { continue }
 
-            let clipName = xmlEscape(String(seg.exportText.prefix(30)))
-
             // Build subtitle titles inside asset-clip
             // Use word-level timing when available for accurate subtitle sync.
             let wordChunks = seg.words.isEmpty
                 ? subtitleChunksFromText(seg.exportText, maxChars: maxSubtitleChars, segStart: seg.start, segEnd: seg.end)
                 : subtitleChunksFromWords(seg.words.filter(\.isKept), maxChars: maxSubtitleChars)
+
+            // Clip name = first subtitle chunk (matches what FCP shows in timeline)
+            let clipName = xmlEscape(wordChunks.first?.text ?? String(seg.exportText.prefix(30)))
 
             if wordChunks.isEmpty {
                 // No subtitle — self-closing asset-clip
