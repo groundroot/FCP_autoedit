@@ -240,16 +240,25 @@ struct ContentView: View {
     /// Opens an NSOpenPanel for .fcpxml files, then runs resub analysis.
     private func importFCPXML() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.xml, .data]
+        // Don't set allowedContentTypes — .fcpxmld is a directory bundle,
+        // UTType filtering prevents selecting it. Filter manually after selection.
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = true   // .fcpxmld is a directory bundle
         panel.canChooseFiles = true
+        panel.treatsFilePackagesAsDirectories = false  // treat .fcpxmld as opaque package
         panel.message = L10n.tr("toolbar.import_fcpxml_message")
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
+
+            let ext = url.pathExtension.lowercased()
+            guard ext == "fcpxmld" || ext == "fcpxml" || ext == "xml" else {
+                print("[Silenci] Unsupported file: \(url.lastPathComponent)")
+                return
+            }
+
             // Resolve .fcpxmld bundle → Info.fcpxml inside
             let resolvedURL: URL
-            if url.pathExtension == "fcpxmld" {
+            if ext == "fcpxmld" {
                 resolvedURL = url.appendingPathComponent("Info.fcpxml")
                 guard FileManager.default.fileExists(atPath: resolvedURL.path) else {
                     print("[Silenci] Error: Info.fcpxml not found inside .fcpxmld bundle")
