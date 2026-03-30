@@ -106,7 +106,7 @@ du -sh "$APP_BUNDLE"
 if command -v create-dmg &>/dev/null; then
     echo ""
     echo "[6/6] Creating DMG installer…"
-    DMG_PATH="$DIST_DIR/Silenci-v0.2.0-macOS.dmg"
+    DMG_PATH="$DIST_DIR/Silenci-v0.3.0-macOS.dmg"
     rm -f "$DMG_PATH"
 
     create-dmg \
