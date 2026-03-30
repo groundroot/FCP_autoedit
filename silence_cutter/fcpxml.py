@@ -98,8 +98,14 @@ def _split_subtitle(words: List[WordTimestamp], max_chars: int = 20) -> List[dic
             if len(current_text) >= 6:
                 should_break = True
         elif len(current_text) >= max_chars:
-            # 강제 분할: max_chars 초과
-            should_break = True
+            # 강제 분할: max_chars 초과 — 단, 다음 단어가 조사/접미사면 붙여서 유지
+            # (예: "없었기" 에서 자르면 "때문에"가 혼자 남는 문제 방지)
+            next_word = words[i + 1].text if i + 1 < len(words) else ""
+            if len(next_word) <= 3 and len(current_text) < max_chars + 8:
+                # 짧은 다음 단어는 포함시키고 그 다음에서 자르기
+                pass
+            else:
+                should_break = True
 
         if should_break and current_text:
             chunks.append({
