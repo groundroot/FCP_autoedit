@@ -617,6 +617,10 @@ def handle_resub(params: dict) -> dict:
     # Process each clip → produce per-clip segments with timeline times
     # FCP clips may overlap in source time (user extended a clip) or be reordered.
     # We ASR each clip independently and remap to timeline offsets.
+    #
+    # For resub, segments use SOURCE time (not timeline time) because the
+    # video preview plays the original source video. The timeline offset
+    # is only used for subtitle export order.
     all_clip_segments = []
     total = len(clips)
     for i, clip in enumerate(clips):
@@ -628,38 +632,32 @@ def handle_resub(params: dict) -> dict:
         if not result.text and not result.words:
             continue
 
-        # Remap word times: source → timeline
-        # timeline_time = timeline_offset + (source_time - src_start)
-        tl_offset = clip["timeline_offset"]
-        src_start = clip["src_start"]
-
+        # Keep source time for segments (video preview uses original video)
         if result.words:
-            tl_words = []
+            clip_words = []
             for w in result.words:
                 # Clamp to clip source boundaries
                 w_start = max(w.start, clip["src_start"])
                 w_end = min(w.end, clip["src_end"])
                 if w_end <= w_start:
                     continue
-                tl_words.append(WordTimestamp(
+                clip_words.append(WordTimestamp(
                     text=w.text,
-                    start=tl_offset + (w_start - src_start),
-                    end=tl_offset + (w_end - src_start),
+                    start=w_start,
+                    end=w_end,
                 ))
-            if tl_words:
-                # Split this clip's words into segments
-                clip_segments = _split_words_into_segments(tl_words, max_seg_sec)
+            if clip_words:
+                clip_segments = _split_words_into_segments(clip_words, max_seg_sec)
                 all_clip_segments.extend(clip_segments)
         elif result.text:
-            # No word timestamps — single segment for entire clip
             all_clip_segments.append(TranscribedSegment(
-                seg_start=tl_offset,
-                seg_end=tl_offset + clip["duration"],
+                seg_start=clip["src_start"],
+                seg_end=clip["src_end"],
                 text=result.text,
                 words=[WordTimestamp(
                     text=result.text,
-                    start=tl_offset,
-                    end=tl_offset + clip["duration"],
+                    start=clip["src_start"],
+                    end=clip["src_end"],
                 )],
             ))
 
