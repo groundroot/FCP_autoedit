@@ -505,6 +505,15 @@ def handle_resub(params: dict) -> dict:
 
     _progress("analyze", 0, "Reading FCPXML…")
 
+    # Handle .fcpxmld bundle (directory)
+    from pathlib import Path as _P
+    fcpxml_p = _P(fcpxml_path)
+    if fcpxml_p.is_dir():
+        info_path = fcpxml_p / "Info.fcpxml"
+        if not info_path.exists():
+            raise FileNotFoundError(f"Info.fcpxml not found in: {fcpxml_p}")
+        fcpxml_path = str(info_path)
+
     # 1. Parse FCPXML
     tree = ET.parse(str(fcpxml_path))
     root = tree.getroot()

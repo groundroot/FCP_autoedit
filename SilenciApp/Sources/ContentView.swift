@@ -242,15 +242,28 @@ struct ContentView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.xml, .data]
         panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = true   // .fcpxmld is a directory bundle
+        panel.canChooseFiles = true
         panel.message = L10n.tr("toolbar.import_fcpxml_message")
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
+            // Resolve .fcpxmld bundle → Info.fcpxml inside
+            let resolvedURL: URL
+            if url.pathExtension == "fcpxmld" {
+                resolvedURL = url.appendingPathComponent("Info.fcpxml")
+                guard FileManager.default.fileExists(atPath: resolvedURL.path) else {
+                    print("[Silenci] Error: Info.fcpxml not found inside .fcpxmld bundle")
+                    return
+                }
+            } else {
+                resolvedURL = url
+            }
             // Try to load the source video from FCPXML for preview
-            if let videoURL = Self.findVideoInFCPXML(url) {
+            if let videoURL = Self.findVideoInFCPXML(resolvedURL) {
                 videoModel.loadVideo(url: videoURL)
             }
             settings.save()
-            analysisService.startResub(fcpxmlURL: url, environment: pythonEnv, settings: settings)
+            analysisService.startResub(fcpxmlURL: resolvedURL, environment: pythonEnv, settings: settings)
         }
     }
 
@@ -259,9 +272,18 @@ struct ContentView: View {
         guard let data = try? Data(contentsOf: fcpxmlURL),
               let xmlString = String(data: data, encoding: .utf8) else { return nil }
 
-        // Simple regex to find file:// URL in media-rep src
-        if let range = xmlString.range(of: #"file://[^"]*\.(mov|mp4|m4v|avi|mkv)"#, options: .regularExpression, range: nil, locale: nil) {
+        // Find file:// URL in media-rep src attribute
+        if let range = xmlString.range(of: #"file://[^"]*\.(mov|mp4|m4v|avi|mkv|MOV|MP4)"#, options: .regularExpression) {
             let urlString = String(xmlString[range])
+            // URL decode percent-encoded paths (e.g. Korean filenames)
+            if let decoded = urlString.removingPercentEncoding,
+               let url = URL(string: decoded.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString) {
+                let path = decoded.replacingOccurrences(of: "file://", with: "")
+                if FileManager.default.fileExists(atPath: path) {
+                    return URL(fileURLWithPath: path)
+                }
+            }
+            // Fallback: try direct URL construction
             if let url = URL(string: urlString), FileManager.default.fileExists(atPath: url.path) {
                 return url
             }
