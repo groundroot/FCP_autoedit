@@ -2,9 +2,10 @@ import Foundation
 
 /// Manages the bundled Python environment for standalone distribution.
 ///
-/// On first launch, creates a venv in ~/Library/Application Support/Silenci/
-/// and installs the required Python packages. The `silence_cutter` module is
-/// located inside the app bundle's Resources directory.
+/// On first launch:
+///  1. Checks for Homebrew, Python3, ffmpeg — auto-installs missing ones
+///  2. Creates a venv in ~/Library/Application Support/Silenci/
+///  3. Installs the required Python packages via pip
 ///
 /// Subsequent launches reuse the existing venv (unless the version stamp differs).
 @MainActor
@@ -34,10 +35,9 @@ final class PythonEnvironment {
     // MARK: - Constants
 
     /// Version stamp — bump this when dependencies change to force reinstall.
-    private static let envVersion = "2"
+    private static let envVersion = "3"
 
     /// pip packages required for the server mode.
-    /// Deliberately excludes gradio, librosa (unused by server.py).
     private static let serverDependencies: [String] = [
         "numpy<2",
         "soundfile>=0.12.0",
@@ -71,17 +71,13 @@ final class PythonEnvironment {
     }
 
     /// Path to the bundled `silence_cutter` module.
-    /// In development (swift run), falls back to walking up from cwd.
     private var modulePath: String {
-        // 1. Check app bundle Resources
         if let resourcePath = Bundle.main.resourcePath {
             let bundled = (resourcePath as NSString).appendingPathComponent("silence_cutter")
             if FileManager.default.fileExists(atPath: bundled) {
                 return resourcePath
             }
         }
-
-        // 2. Development fallback — walk up from cwd
         let fm = FileManager.default
         var dir = URL(fileURLWithPath: fm.currentDirectoryPath)
         for _ in 0..<5 {
@@ -91,19 +87,21 @@ final class PythonEnvironment {
             }
             dir = dir.deletingLastPathComponent()
         }
-
         return FileManager.default.currentDirectoryPath
     }
 
     // MARK: - Setup
 
-    /// Ensure the Python environment is ready. Idempotent — safe to call multiple times.
     func ensureReady() async {
         guard case .notStarted = state else { return }
         state = .checking
         progress = 0.0
 
         do {
+            // Step 1: Ensure system prerequisites (Homebrew, Python3, ffmpeg)
+            try await ensurePrerequisites()
+
+            // Step 2: Setup Python venv + install packages
             let pythonPath = try await setupVenv()
             let modPath = modulePath
             state = .ready(pythonPath: pythonPath, modulePath: modPath)
@@ -115,21 +113,74 @@ final class PythonEnvironment {
         }
     }
 
-    /// Retry after a failure.
     func retry() async {
         state = .notStarted
         await ensureReady()
     }
 
+    // MARK: - Prerequisites (Homebrew, Python3, ffmpeg)
+
+    /// Check and auto-install missing system dependencies.
+    private func ensurePrerequisites() async throws {
+        // 1. Homebrew
+        if !isCommandAvailable("/opt/homebrew/bin/brew") && !isCommandAvailable("/usr/local/bin/brew") {
+            state = .installing(detail: "Installing Homebrew…")
+            progress = 0.02
+            print("[PythonEnvironment] Homebrew not found — installing…")
+            try await runShell("""
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            """)
+            // Add Homebrew to PATH for this session
+            if FileManager.default.fileExists(atPath: "/opt/homebrew/bin/brew") {
+                print("[PythonEnvironment] ✅ Homebrew installed at /opt/homebrew/bin/brew")
+            }
+        }
+
+        let brewPath = findBrew()
+
+        // 2. Python3
+        if findSystemPython() == nil {
+            state = .installing(detail: "Installing Python3…")
+            progress = 0.04
+            print("[PythonEnvironment] Python3 not found — installing via Homebrew…")
+            try await run(brewPath, arguments: ["install", "python@3"])
+        }
+
+        // Verify Python3 is now available
+        guard findSystemPython() != nil else {
+            throw PythonEnvError.pythonNotFound
+        }
+
+        // 3. ffmpeg
+        if !isCommandAvailable("/opt/homebrew/bin/ffmpeg") && !isCommandAvailable("/usr/local/bin/ffmpeg") {
+            state = .installing(detail: "Installing ffmpeg…")
+            progress = 0.06
+            print("[PythonEnvironment] ffmpeg not found — installing via Homebrew…")
+            try await run(brewPath, arguments: ["install", "ffmpeg"])
+        }
+
+        print("[PythonEnvironment] ✅ All prerequisites satisfied")
+    }
+
+    /// Check if a command exists at the given path.
+    private func isCommandAvailable(_ path: String) -> Bool {
+        FileManager.default.isExecutableFile(atPath: path)
+    }
+
+    /// Find Homebrew binary.
+    private func findBrew() -> String {
+        if isCommandAvailable("/opt/homebrew/bin/brew") { return "/opt/homebrew/bin/brew" }
+        if isCommandAvailable("/usr/local/bin/brew") { return "/usr/local/bin/brew" }
+        return "brew"
+    }
+
     // MARK: - Cleanup
 
-    /// Size of the installed venv on disk, in bytes. Returns 0 if not installed.
     var installedSize: Int64 {
         guard FileManager.default.fileExists(atPath: venvDir.path) else { return 0 }
         return Self.directorySize(url: venvDir)
     }
 
-    /// Human-readable size string (e.g. "1.4 GB").
     var installedSizeString: String {
         let bytes = installedSize
         guard bytes > 0 else { return "Not installed" }
@@ -138,13 +189,10 @@ final class PythonEnvironment {
         return formatter.string(fromByteCount: bytes)
     }
 
-    /// Whether a venv is currently installed.
     var isInstalled: Bool {
         FileManager.default.fileExists(atPath: venvPython.path)
     }
 
-    /// Delete the entire Application Support directory (venv + any cached data).
-    /// After calling this, the app will need to reinstall on next launch.
     func removeEnvironment() throws {
         let fm = FileManager.default
         if fm.fileExists(atPath: supportDir.path) {
@@ -155,12 +203,10 @@ final class PythonEnvironment {
         print("[PythonEnvironment] 🗑️ Environment removed: \(supportDir.path)")
     }
 
-    /// Path to the support directory, exposed for UI display.
     var supportDirPath: String {
         supportDir.path
     }
 
-    /// Calculate total size of a directory recursively.
     private static func directorySize(url: URL) -> Int64 {
         let fm = FileManager.default
         guard let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey], options: [.skipsHiddenFiles]) else {
@@ -175,12 +221,11 @@ final class PythonEnvironment {
         return total
     }
 
-    // MARK: - Internal
+    // MARK: - Venv Setup
 
     private func setupVenv() async throws -> String {
         let fm = FileManager.default
 
-        // Ensure support directory exists
         try fm.createDirectory(at: supportDir, withIntermediateDirectories: true)
 
         // Check if venv already exists with correct version
@@ -192,8 +237,9 @@ final class PythonEnvironment {
             return venvPython.path
         }
 
-        // Find system python3
-        let systemPython = findSystemPython()
+        guard let systemPython = findSystemPython() else {
+            throw PythonEnvError.pythonNotFound
+        }
         print("[PythonEnvironment] Using system Python: \(systemPython)")
 
         // Create venv (or recreate if version mismatch)
@@ -202,8 +248,8 @@ final class PythonEnvironment {
             try fm.removeItem(at: venvDir)
         }
 
-        state = .installing(detail: "Python 가상환경 생성 중…")
-        progress = 0.05
+        state = .installing(detail: "Creating Python virtual environment…")
+        progress = 0.10
         try await run(systemPython, arguments: ["-m", "venv", venvDir.path])
 
         // Install dependencies
@@ -212,7 +258,7 @@ final class PythonEnvironment {
 
         for (index, dep) in Self.serverDependencies.enumerated() {
             let pct = Double(index) / Double(totalDeps)
-            progress = 0.1 + pct * 0.85
+            progress = 0.15 + pct * 0.80
             state = .installing(detail: "\(dep) 설치 중… (\(index + 1)/\(totalDeps))")
             print("[PythonEnvironment] Installing \(dep) (\(index + 1)/\(totalDeps))")
             try await run(pipPath, arguments: ["install", dep])
@@ -227,7 +273,8 @@ final class PythonEnvironment {
     }
 
     /// Find a usable system python3 — prefers Homebrew, then Xcode CLT, then PATH.
-    private func findSystemPython() -> String {
+    /// Returns nil if not found.
+    private func findSystemPython() -> String? {
         let candidates = [
             "/opt/homebrew/bin/python3",
             "/usr/local/bin/python3",
@@ -238,7 +285,7 @@ final class PythonEnvironment {
                 return path
             }
         }
-        return "python3" // fall back to PATH lookup
+        return nil
     }
 
     /// Run a subprocess and wait for it to complete. Throws on non-zero exit.
@@ -247,6 +294,12 @@ final class PythonEnvironment {
         proc.executableURL = URL(fileURLWithPath: executable)
         proc.arguments = arguments
 
+        // Ensure Homebrew paths are in PATH
+        var env = ProcessInfo.processInfo.environment
+        let brewPaths = "/opt/homebrew/bin:/usr/local/bin"
+        env["PATH"] = brewPaths + ":" + (env["PATH"] ?? "/usr/bin:/bin")
+        proc.environment = env
+
         let stderrPipe = Pipe()
         let stdoutPipe = Pipe()
         proc.standardError = stderrPipe
@@ -254,7 +307,6 @@ final class PythonEnvironment {
 
         try proc.run()
 
-        // Wait for termination on a background thread to avoid blocking MainActor.
         let (status, errorOutput) = await withCheckedContinuation { (continuation: CheckedContinuation<(Int32, String), Never>) in
             DispatchQueue.global(qos: .userInitiated).async {
                 proc.waitUntilExit()
@@ -271,6 +323,11 @@ final class PythonEnvironment {
             )
         }
     }
+
+    /// Run a shell command string via /bin/bash.
+    private func runShell(_ command: String) async throws {
+        try await run("/bin/bash", arguments: ["-c", command])
+    }
 }
 
 // MARK: - Errors
@@ -284,7 +341,7 @@ enum PythonEnvError: Error, LocalizedError {
         case .commandFailed(let cmd, let msg):
             "Command failed: \(cmd)\n\(msg)"
         case .pythonNotFound:
-            "Python 3을 찾을 수 없습니다. python3을 먼저 설치해주세요."
+            "Python 3 not found. Please install Python 3.10+ first."
         }
     }
 }
