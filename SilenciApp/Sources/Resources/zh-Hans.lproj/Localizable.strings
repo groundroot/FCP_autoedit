@@ -24,7 +24,6 @@
 // MARK: - Toolbar
 "toolbar.open" = "打开";
 "toolbar.analyze" = "分析";
-"toolbar.remove_silence" = "去除静音";
 "toolbar.find" = "查找";
 "toolbar.export" = "导出";
 "toolbar.settings" = "设置";

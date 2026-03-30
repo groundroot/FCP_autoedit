@@ -24,7 +24,6 @@
 // MARK: - Toolbar
 "toolbar.open" = "開く";
 "toolbar.analyze" = "分析";
-"toolbar.remove_silence" = "無音除去";
 "toolbar.find" = "検索";
 "toolbar.export" = "書き出し";
 "toolbar.settings" = "設定";

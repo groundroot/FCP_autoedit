@@ -24,7 +24,6 @@
 // MARK: - Toolbar
 "toolbar.open" = "열기";
 "toolbar.analyze" = "분석";
-"toolbar.remove_silence" = "무음 제거";
 "toolbar.find" = "찾기";
 "toolbar.export" = "내보내기";
 "toolbar.settings" = "설정";

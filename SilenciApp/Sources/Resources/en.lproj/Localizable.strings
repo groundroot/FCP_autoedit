@@ -24,7 +24,6 @@
 // MARK: - Toolbar
 "toolbar.open" = "Open";
 "toolbar.analyze" = "Analyze";
-"toolbar.remove_silence" = "Cut Silence";
 "toolbar.find" = "Find";
 "toolbar.export" = "Export";
 "toolbar.settings" = "Settings";

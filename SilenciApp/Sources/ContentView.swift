@@ -180,13 +180,6 @@ struct ContentView: View {
                     Spacer()
 
                     Button {
-                        analysisService.removeDiscardedSegments()
-                    } label: {
-                        Label(L10n.tr("toolbar.remove_silence"), systemImage: "scissors")
-                    }
-                    .disabled(analysisService.segments.isEmpty)
-
-                    Button {
                         showFindReplace.toggle()
                     } label: {
                         Label(L10n.tr("toolbar.find"), systemImage: "magnifyingglass")
