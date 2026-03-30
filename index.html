@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silenci — AI Silence Removal & Subtitle Generator for Final Cut Pro</title>
+  <meta name="description" content="Remove silence from videos and generate word-level subtitles. 100% local on your Mac. Free & open source.">
+  <meta property="og:title" content="Silenci — AI Silence Removal for Final Cut Pro">
+  <meta property="og:description" content="Drop a video → AI cuts silence → Export to Final Cut Pro with word-level subtitles. No cloud. No subscription.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/leeyc09/Silence-Cutter/main/docs/app-main.jpg">
+  <meta property="og:url" content="https://leeyc09.github.io/Silence-Cutter/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="docs/logo.svg">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'Pretendard', 'system-ui', 'sans-serif'],
+            display: ['Outfit', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            accent: '#06b6d4',
+            'accent-dark': '#0891b2',
+            surface: '#0c1222',
+            'surface-light': '#131d35',
+            'surface-card': '#162040',
+          }
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * { -webkit-font-smoothing: antialiased; }
+    .grain::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes pulse-glow { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+    @keyframes slide-up { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .anim-float { animation: float 6s ease-in-out infinite; }
+    .anim-slide-up { animation: slide-up 0.8s ease-out both; }
+    .anim-delay-1 { animation-delay: 0.15s; }
+    .anim-delay-2 { animation-delay: 0.3s; }
+    .anim-delay-3 { animation-delay: 0.45s; }
+    .anim-delay-4 { animation-delay: 0.6s; }
+    .marquee-track { animation: marquee 30s linear infinite; }
+    .gradient-text { background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  </style>
+</head>
+
+<body class="bg-surface text-slate-300 grain overflow-x-hidden">
+
+  <!-- NAV -->
+  <nav class="fixed top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-xl bg-white/[0.03] border border-white/[0.06] rounded-full px-6 py-3 shadow-2xl shadow-black/20">
+    <div class="flex items-center gap-8">
+      <a href="#" class="flex items-center gap-2 group">
+        <img src="docs/logo.svg" alt="Silenci" class="w-7 h-7 transition-transform group-hover:scale-110">
+        <span class="font-display font-bold text-white text-lg tracking-tight">Silenci</span>
+      </a>
+      <div class="hidden md:flex items-center gap-6 text-sm text-slate-400">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#how-it-works" class="hover:text-white transition-colors">How It Works</a>
+        <a href="#screenshots" class="hover:text-white transition-colors">Screenshots</a>
+      </div>
+      <a href="https://github.com/leeyc09/Silence-Cutter/releases/latest" class="ml-2 bg-accent hover:bg-accent-dark text-white text-sm font-semibold px-5 py-2 rounded-full transition-all hover:scale-[1.03] active:scale-[0.98]">
+        Download
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="relative min-h-[100dvh] flex items-center overflow-hidden">
+    <!-- Background glow -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-accent/[0.07] rounded-full blur-[120px]"></div>
+    <div class="absolute top-1/3 right-0 w-[400px] h-[400px] bg-blue-500/[0.05] rounded-full blur-[100px]"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-20 items-center pt-28 pb-16">
+      <!-- Left: Text -->
+      <div class="anim-slide-up">
+        <div class="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-full px-4 py-1.5 mb-6">
+          <iconify-icon icon="solar:star-bold" class="text-accent text-sm"></iconify-icon>
+          <span class="text-accent text-sm font-medium">Free & Open Source</span>
+        </div>
+
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl text-white tracking-tighter leading-[1.08] mb-6">
+          Cut the silence.<br>
+          <span class="gradient-text">Keep every word.</span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-slate-400 leading-relaxed max-w-[52ch] mb-8">
+          Silenci removes silence from your videos and generates perfectly synced subtitles — all locally on your Mac. Export directly to Final Cut Pro.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-10">
+          <a href="https://github.com/leeyc09/Silence-Cutter/releases/latest" class="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-accent/20">
+            <iconify-icon icon="solar:download-minimalistic-bold" class="text-xl"></iconify-icon>
+            Download DMG
+          </a>
+          <a href="https://github.com/leeyc09/Silence-Cutter" class="inline-flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white font-semibold px-8 py-4 rounded-xl text-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <iconify-icon icon="solar:code-bold" class="text-xl"></iconify-icon>
+            View on GitHub
+          </a>
+        </div>
+
+        <div class="flex items-center gap-6 text-sm text-slate-500">
+          <span class="flex items-center gap-1.5"><iconify-icon icon="solar:monitor-bold" class="text-slate-400"></iconify-icon> macOS 14+</span>
+          <span class="flex items-center gap-1.5"><iconify-icon icon="solar:cpu-bolt-bold" class="text-slate-400"></iconify-icon> Apple Silicon</span>
+          <span class="flex items-center gap-1.5"><iconify-icon icon="solar:shield-check-bold" class="text-slate-400"></iconify-icon> 100% Local</span>
+        </div>
+      </div>
+
+      <!-- Right: App screenshot -->
+      <div class="anim-slide-up anim-delay-2 relative">
+        <div class="absolute inset-0 bg-accent/[0.08] rounded-2xl blur-[60px] -z-10"></div>
+        <img src="docs/app-main.jpg" alt="Silenci app — word-level editing" class="rounded-2xl shadow-2xl shadow-black/40 border border-white/[0.06] w-full anim-float" style="animation-duration: 8s;">
+      </div>
+    </div>
+  </section>
+
+  <!-- PROBLEM → SOLUTION -->
+  <section id="how-it-works" class="py-24 md:py-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16 anim-slide-up">
+        <h2 class="font-display font-extrabold text-3xl md:text-4xl lg:text-5xl text-white tracking-tight mb-4">
+          Other tools chop your words in half.
+        </h2>
+        <p class="text-lg text-slate-400 max-w-[55ch] mx-auto">
+          Most silence-removal tools split audio by time — which cuts words mid-syllable. Silenci uses a 2-pass approach to split only at word boundaries.
+        </p>
+      </div>
+
+      <!-- Comparison -->
+      <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-20">
+        <!-- Other tools -->
+        <div class="anim-slide-up anim-delay-1 bg-red-500/[0.04] border border-red-500/[0.12] rounded-2xl p-8">
+          <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="solar:close-circle-bold" class="text-red-400 text-xl"></iconify-icon>
+            <span class="text-red-400 font-semibold">Other Tools</span>
+          </div>
+          <div class="font-mono text-sm text-slate-400 space-y-2">
+            <div class="bg-red-500/[0.06] rounded-lg px-4 py-2">"The doctor sai<span class="text-red-400 font-bold">|</span>" "d he was working"</div>
+            <div class="bg-red-500/[0.06] rounded-lg px-4 py-2">"through bein<span class="text-red-400 font-bold">|</span>" "g someone mobile"</div>
+          </div>
+          <p class="text-sm text-slate-500 mt-4">Time-based split — words get chopped</p>
+        </div>
+
+        <!-- Silenci -->
+        <div class="anim-slide-up anim-delay-2 bg-accent/[0.04] border border-accent/[0.15] rounded-2xl p-8">
+          <div class="flex items-center gap-2 mb-4">
+            <iconify-icon icon="solar:check-circle-bold" class="text-accent text-xl"></iconify-icon>
+            <span class="text-accent font-semibold">Silenci</span>
+          </div>
+          <div class="font-mono text-sm text-slate-400 space-y-2">
+            <div class="bg-accent/[0.06] rounded-lg px-4 py-2">"The doctor said" <span class="text-accent">|</span> "he was working"</div>
+            <div class="bg-accent/[0.06] rounded-lg px-4 py-2">"through being" <span class="text-accent">|</span> "someone mobile"</div>
+          </div>
+          <p class="text-sm text-slate-500 mt-4">Word-boundary split — clean cuts every time</p>
+        </div>
+      </div>
+
+      <!-- Pipeline steps -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="anim-slide-up anim-delay-1 bg-surface-card/60 border border-white/[0.05] rounded-2xl p-6 text-center">
+          <div class="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <iconify-icon icon="solar:upload-minimalistic-bold" class="text-accent text-2xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-semibold mb-2">1. Drop Video</h3>
+          <p class="text-sm text-slate-400">Drag any video file into the app or use File Open</p>
+        </div>
+        <div class="anim-slide-up anim-delay-2 bg-surface-card/60 border border-white/[0.05] rounded-2xl p-6 text-center">
+          <div class="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <iconify-icon icon="solar:soundwave-bold" class="text-blue-400 text-2xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-semibold mb-2">2. AI Analyzes</h3>
+          <p class="text-sm text-slate-400">Silero VAD detects silence. Qwen3-ASR transcribes with word timestamps.</p>
+        </div>
+        <div class="anim-slide-up anim-delay-3 bg-surface-card/60 border border-white/[0.05] rounded-2xl p-6 text-center">
+          <div class="w-14 h-14 bg-purple-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <iconify-icon icon="solar:scissors-bold" class="text-purple-400 text-2xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-semibold mb-2">3. Edit Words</h3>
+          <p class="text-sm text-slate-400">Toggle individual words on/off. Split or merge clips freely.</p>
+        </div>
+        <div class="anim-slide-up anim-delay-4 bg-surface-card/60 border border-white/[0.05] rounded-2xl p-6 text-center">
+          <div class="w-14 h-14 bg-emerald-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <iconify-icon icon="solar:export-bold" class="text-emerald-400 text-2xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-semibold mb-2">4. Export</h3>
+          <p class="text-sm text-slate-400">FCPXML for Final Cut Pro, SRT, iTT — with synced subtitles.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-24 md:py-32 bg-surface-light/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="font-display font-extrabold text-3xl md:text-4xl text-white tracking-tight mb-4">
+          Everything runs on your Mac.
+        </h2>
+        <p class="text-lg text-slate-400">No cloud. No subscription. No API keys. No data leaves your machine.</p>
+      </div>
+
+      <!-- Bento grid -->
+      <div class="grid md:grid-cols-3 gap-4">
+        <!-- Large card -->
+        <div class="md:col-span-2 bg-surface-card border border-white/[0.05] rounded-2xl p-8 overflow-hidden relative group">
+          <div class="absolute top-0 right-0 w-48 h-48 bg-accent/[0.06] rounded-full blur-[80px] group-hover:bg-accent/[0.12] transition-all duration-700"></div>
+          <h3 class="text-white font-bold text-xl mb-3 relative z-10">2-Pass ASR — Never Cuts Mid-Word</h3>
+          <p class="text-slate-400 leading-relaxed mb-4 relative z-10 max-w-[55ch]">Pass 1 transcribes with Qwen3-ASR + ForcedAligner to get word-level timestamps. Pass 2 splits segments only at word <code class="text-accent">end_time</code> boundaries. The result: clean cuts with perfectly synced subtitles.</p>
+          <div class="font-mono text-xs text-slate-500 bg-black/20 rounded-lg p-4 relative z-10">
+            <span class="text-accent">Pass 1:</span> VAD → 30s chunks → ASR + Aligner → word timestamps<br>
+            <span class="text-accent">Pass 2:</span> Split at word.end_time → never mid-word
+          </div>
+        </div>
+
+        <!-- Apple Silicon -->
+        <div class="bg-surface-card border border-white/[0.05] rounded-2xl p-8 flex flex-col justify-between">
+          <div>
+            <div class="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl flex items-center justify-center mb-4 shadow-inner">
+              <iconify-icon icon="solar:cpu-bolt-bold" class="text-white text-xl"></iconify-icon>
+            </div>
+            <h3 class="text-white font-bold text-xl mb-2">Apple Silicon Native</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">MLX 8-bit quantized models run on Neural Engine & GPU. Near real-time inference without external GPU.</p>
+          </div>
+          <div class="mt-4 text-xs text-slate-500 font-mono">M1 / M2 / M3 / M4</div>
+        </div>
+
+        <!-- Multi-language -->
+        <div class="bg-surface-card border border-white/[0.05] rounded-2xl p-8">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4">
+            <iconify-icon icon="solar:global-bold" class="text-blue-400 text-xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-bold text-xl mb-2">Multi-Language</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-3">ASR supports Korean, English, Japanese, Chinese and 10+ more languages. App UI available in 4 languages.</p>
+          <div class="flex gap-2 text-2xl">
+            <span>🇰🇷</span><span>🇺🇸</span><span>🇯🇵</span><span>🇨🇳</span>
+          </div>
+        </div>
+
+        <!-- Export formats -->
+        <div class="bg-surface-card border border-white/[0.05] rounded-2xl p-8">
+          <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4">
+            <iconify-icon icon="solar:file-check-bold" class="text-emerald-400 text-xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-bold text-xl mb-2">Export Anywhere</h3>
+          <p class="text-slate-400 text-sm leading-relaxed mb-3">FCPXML with inline subtitles for Final Cut Pro. SRT for YouTube/VLC. iTT for iTunes. All word-boundary split.</p>
+          <div class="flex gap-2 font-mono text-xs">
+            <span class="bg-blue-500/10 text-blue-400 px-2 py-1 rounded">.fcpxml</span>
+            <span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded">.srt</span>
+            <span class="bg-purple-500/10 text-purple-400 px-2 py-1 rounded">.itt</span>
+          </div>
+        </div>
+
+        <!-- Zero config -->
+        <div class="bg-surface-card border border-white/[0.05] rounded-2xl p-8">
+          <div class="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center mb-4">
+            <iconify-icon icon="solar:magic-stick-3-bold" class="text-amber-400 text-xl"></iconify-icon>
+          </div>
+          <h3 class="text-white font-bold text-xl mb-2">Zero Config Install</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Download DMG, open the app. Homebrew, Python, ffmpeg, and AI models are installed automatically on first launch.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREENSHOTS -->
+  <section id="screenshots" class="py-24 md:py-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="font-display font-extrabold text-3xl md:text-4xl text-white tracking-tight mb-4">See it in action.</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="group relative overflow-hidden rounded-2xl border border-white/[0.05]">
+          <img src="docs/app-settings.jpg" alt="Analysis settings" class="w-full transition-transform duration-500 group-hover:scale-[1.02]">
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <h3 class="text-white font-semibold">Analysis Settings</h3>
+            <p class="text-sm text-slate-400">Configure language, model, VAD sensitivity, subtitle parameters</p>
+          </div>
+        </div>
+
+        <div class="group relative overflow-hidden rounded-2xl border border-white/[0.05]">
+          <img src="docs/app-progress.jpg" alt="Analysis progress" class="w-full transition-transform duration-500 group-hover:scale-[1.02]">
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <h3 class="text-white font-semibold">Real-time Progress</h3>
+            <p class="text-sm text-slate-400">Track analysis and model download with byte-level precision</p>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 group relative overflow-hidden rounded-2xl border border-white/[0.05]">
+          <img src="docs/fcp-import.jpg" alt="Final Cut Pro import" class="w-full transition-transform duration-500 group-hover:scale-[1.02]">
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <h3 class="text-white font-semibold">Final Cut Pro Import</h3>
+            <p class="text-sm text-slate-400">FCPXML timeline + iTT subtitles load directly into FCP</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="py-24 md:py-32 bg-surface-light/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="font-display font-extrabold text-3xl md:text-4xl text-white tracking-tight mb-4">Built with</h2>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-4 max-w-3xl mx-auto">
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">SwiftUI</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">Python</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">MLX</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">Qwen3-ASR</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">ForcedAligner</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">Silero VAD</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">PyTorch</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">JSON-RPC 2.0</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">ffmpeg</span>
+        <span class="bg-surface-card border border-white/[0.06] rounded-full px-5 py-2.5 text-sm text-slate-300 font-medium">FCPXML</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-28 md:py-36 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-surface via-accent/[0.03] to-surface"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-accent/[0.08] rounded-full blur-[100px]"></div>
+
+    <div class="max-w-3xl mx-auto px-4 text-center relative z-10">
+      <h2 class="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl text-white tracking-tighter leading-tight mb-6">
+        Ready to cut the silence?
+      </h2>
+      <p class="text-lg text-slate-400 mb-10 max-w-[45ch] mx-auto">
+        Download Silenci for free. Open source, runs locally, no account required.
+      </p>
+
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="https://github.com/leeyc09/Silence-Cutter/releases/latest" class="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-bold px-10 py-5 rounded-2xl text-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-accent/25">
+          <iconify-icon icon="solar:download-minimalistic-bold" class="text-xl"></iconify-icon>
+          Download for macOS
+        </a>
+        <a href="https://github.com/leeyc09/Silence-Cutter" class="inline-flex items-center justify-center gap-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] text-white font-semibold px-10 py-5 rounded-2xl text-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <iconify-icon icon="solar:star-bold" class="text-amber-400 text-xl"></iconify-icon>
+          Star on GitHub
+        </a>
+      </div>
+
+      <p class="text-sm text-slate-500 mt-8">macOS 14+ &middot; Apple Silicon &middot; ~1.2 MB download &middot; Apache 2.0 License</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/[0.04] py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2">
+        <img src="docs/logo.svg" alt="Silenci" class="w-6 h-6">
+        <span class="text-slate-500 text-sm">Silenci &mdash; Open source silence removal for video editors.</span>
+      </div>
+      <div class="flex items-center gap-6 text-sm text-slate-500">
+        <a href="https://github.com/leeyc09/Silence-Cutter" class="hover:text-slate-300 transition-colors">GitHub</a>
+        <a href="https://github.com/leeyc09/Silence-Cutter/releases" class="hover:text-slate-300 transition-colors">Releases</a>
+        <a href="https://github.com/leeyc09/Silence-Cutter/blob/main/LICENSE" class="hover:text-slate-300 transition-colors">License</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
