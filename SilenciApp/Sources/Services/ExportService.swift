@@ -102,8 +102,11 @@ struct ExportService {
                 // Chunk-relative timing: shift to timeline offset
                 let segStartAbs = segment.start
                 for chunk in chunks {
-                    let chunkStart = offset + (chunk.start - segStartAbs)
-                    let chunkEnd = offset + (chunk.end - segStartAbs)
+                    let clampedStart = max(chunk.start, segment.start)
+                    let clampedEnd = min(chunk.end, segment.end)
+                    let chunkStart = offset + (clampedStart - segStartAbs)
+                    let chunkEnd = offset + (clampedEnd - segStartAbs)
+                    guard chunkEnd > chunkStart else { continue }
                     entries.append("\(idx)\n\(srtTimecode(chunkStart)) --> \(srtTimecode(chunkEnd))\n\(chunk.text)")
                     idx += 1
                 }
@@ -322,8 +325,13 @@ struct ExportService {
             } else {
                 let segStartAbs = segment.start
                 for chunk in chunks {
-                    let chunkStart = offset + (chunk.start - segStartAbs)
-                    let chunkEnd = offset + (chunk.end - segStartAbs)
+                    // Clamp chunk times to segment boundaries
+                    let clampedStart = max(chunk.start, segment.start)
+                    let clampedEnd = min(chunk.end, segment.end)
+                    let chunkStart = offset + (clampedStart - segStartAbs)
+                    let chunkEnd = offset + (clampedEnd - segStartAbs)
+                    // Skip invalid chunks (end <= start after clamping)
+                    guard chunkEnd > chunkStart else { continue }
                     let escapedText = xmlEscape(chunk.text)
                     xml += "      <p begin=\"\(ittTimecode(chunkStart))\" end=\"\(ittTimecode(chunkEnd))\" region=\"bottom\" style=\"default\">\(escapedText)</p>\n"
                 }

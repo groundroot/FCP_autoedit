@@ -310,7 +310,9 @@ struct ContentView: View {
         case .fcpxml:
             panel.allowedContentTypes = [.xml]
         case .itt:
-            panel.allowedContentTypes = [.data]
+            // Use .xml UTType so NSSavePanel respects the extension properly
+            // (UTType.data doesn't enforce .itt extension)
+            panel.allowedContentTypes = [.xml]
         }
 
         let baseName: String
@@ -319,7 +321,10 @@ struct ContentView: View {
         } else {
             baseName = "export"
         }
-        panel.nameFieldStringValue = "\(baseName).\(format.fileExtension)"
+        // NSSavePanel auto-appends extension from allowedContentTypes,
+        // so use custom extension via nameFieldStringValue without doubling.
+        panel.nameFieldStringValue = baseName
+        panel.allowsOtherFileTypes = true
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
