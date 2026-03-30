@@ -229,8 +229,18 @@ Native SwiftUI app — load a video, configure settings, analyze, edit, and expo
 
 ```bash
 ./build-release.sh                # Build → dist/SilenciApp.app
-open dist/SilenciApp.app    # Launch
+open dist/SilenciApp.app          # Launch
 ```
+
+### Install from DMG
+
+1. Download `Silenci-vX.X.X-macOS.dmg` from [Releases](https://github.com/leeyc09/Silence-Cutter/releases)
+2. Open DMG → drag `SilenciApp` to Applications
+3. **Important (unsigned app):** Before first launch, run in Terminal:
+   ```bash
+   xattr -cr /Applications/SilenciApp.app
+   ```
+4. Open the app — Python environment auto-installs on first launch (~45s)
 
 ### First Launch — Auto Setup
 

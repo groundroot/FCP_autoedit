@@ -134,6 +134,15 @@ else
     echo "ℹ️  Install create-dmg for DMG packaging: brew install create-dmg"
 fi
 
+# 7. Remove quarantine attribute from app bundle
+echo ""
+echo "[7/7] Removing quarantine attribute…"
+xattr -cr "$APP_BUNDLE" 2>/dev/null
+echo "  ✅ Quarantine removed"
+
 echo ""
 echo "To run:"
 echo "  open $APP_BUNDLE"
+echo ""
+echo "⚠️  First launch on another Mac:"
+echo "  If macOS says 'damaged', run: xattr -cr /Applications/SilenciApp.app"
