@@ -67,6 +67,71 @@ INTERNAL_ERROR = -32603
 # 메서드 핸들러
 # ---------------------------------------------------------------------------
 
+def _split_words_into_segments(
+    words: list,
+    max_seconds: float,
+) -> list:
+    """단어 리스트를 max_seconds 이내의 세그먼트로 분할.
+
+    반드시 단어의 end_time 경계에서만 자르므로 단어 중간이 잘리지 않는다.
+    묵음 간격(단어 간 gap)이 큰 지점을 우선 분할점으로 선택한다.
+    """
+    from .transcribe import TranscribedSegment, WordTimestamp
+
+    if not words:
+        return []
+
+    segments = []
+    chunk_start_idx = 0
+
+    while chunk_start_idx < len(words):
+        chunk_start_time = words[chunk_start_idx].start
+
+        # 현재 청크에 들어갈 수 있는 마지막 단어 인덱스 찾기
+        chunk_end_idx = chunk_start_idx
+        for j in range(chunk_start_idx, len(words)):
+            if words[j].end - chunk_start_time <= max_seconds:
+                chunk_end_idx = j
+            else:
+                break
+        else:
+            # 모든 남은 단어가 max_seconds 안에 들어감
+            chunk_end_idx = len(words) - 1
+
+        # 최소 1개 단어는 포함
+        if chunk_end_idx < chunk_start_idx:
+            chunk_end_idx = chunk_start_idx
+
+        # 분할점 최적화: max_seconds 범위 내에서 가장 큰 gap(묵음)을 찾아 거기서 자르기
+        if chunk_end_idx < len(words) - 1:
+            best_split = chunk_end_idx
+            best_gap = 0.0
+            # 후반 60% 구간에서 가장 큰 gap 탐색 (너무 앞에서 자르지 않도록)
+            search_from = chunk_start_idx + max(1, int((chunk_end_idx - chunk_start_idx) * 0.4))
+            for j in range(search_from, chunk_end_idx + 1):
+                if j + 1 < len(words):
+                    gap = words[j + 1].start - words[j].end
+                    if gap > best_gap:
+                        best_gap = gap
+                        best_split = j
+            # gap이 0.1초 이상이면 해당 지점에서 분할
+            if best_gap >= 0.1:
+                chunk_end_idx = best_split
+
+        chunk_words = words[chunk_start_idx:chunk_end_idx + 1]
+        text = " ".join(w.text for w in chunk_words)
+        segments.append(TranscribedSegment(
+            seg_start=chunk_words[0].start,
+            seg_end=chunk_words[-1].end,
+            text=text,
+            words=chunk_words,
+        ))
+
+        chunk_start_idx = chunk_end_idx + 1
+
+    return segments
+
+
 def handle_ping(params: dict) -> str:
     """연결 테스트."""
     return "pong"
@@ -204,13 +269,12 @@ def handle_analyze(params: dict) -> dict:
             },
         }
 
-    asr_segments = split_long_speech_segments(
-        audio_path, speech_segments,
-        max_segment_seconds=params.get("max_segment_seconds", 15.0),
-    )
+    asr_max_seconds = params.get("max_segment_seconds", 15.0)
 
-    # 4. ASR — 세그먼트에 overlap padding 적용 후 전사
-    #    분할 경계에서 단어가 잘리지 않도록 인접 세그먼트와 0.5초 겹침.
+    # 4. ASR — 2-pass 방식
+    #  Pass 1: VAD 구간을 ASR 최대 길이 단위로 대략 분할 → ASR+ForcedAligner
+    #  Pass 2: 단어의 end_time 기준으로 max_seconds마다 정확히 분할
+    #  → 절대 단어 중간에서 잘리지 않음
     _progress("analyze", 25, "음성 인식 시작")
     transcriber = Transcriber(
         asr_model=params.get("asr_model", "mlx-community/Qwen3-ASR-0.6B-8bit"),
@@ -219,34 +283,44 @@ def handle_analyze(params: dict) -> dict:
         on_progress=lambda phase, pct, detail: _progress(phase, pct, detail),
     )
 
-    OVERLAP = 0.5  # 초 — 각 세그먼트 경계에 추가할 여유
-    results = []
-    total = len(asr_segments)
-    for i, seg in enumerate(asr_segments):
-        pct = 25 + int(70 * (i / total))
+    # Pass 1: VAD 구간별 ASR — 긴 구간은 ASR용으로 대략 분할 (30초 단위)
+    #   ForcedAligner가 30초까지 잘 동작하므로 넉넉하게 잡는다.
+    asr_chunk_seconds = 30.0
+    asr_chunks = split_long_speech_segments(
+        audio_path, speech_segments,
+        max_segment_seconds=asr_chunk_seconds,
+    )
+
+    all_words: list = []  # WordTimestamp (절대 시간)
+    total = len(asr_chunks)
+    for i, seg in enumerate(asr_chunks):
+        pct = 25 + int(50 * (i / total))
         _progress("analyze", pct, f"전사 중 ({i + 1}/{total})")
-
-        # overlap 적용: 시작을 조금 앞으로, 끝을 조금 뒤로
-        padded_start = max(0, seg.start - (OVERLAP if i > 0 else 0))
-        padded_end = seg.end + (OVERLAP if i < total - 1 else 0)
-        result = transcriber.transcribe_segment(audio_path, padded_start, padded_end)
-
-        if result.text and result.words:
-            # overlap 구간의 단어 제거: 원래 seg.start ~ seg.end 범위만 남김
-            trimmed_words = [
-                w for w in result.words
-                if w.start >= seg.start - 0.05 and w.end <= seg.end + 0.05
-            ]
-            if trimmed_words:
-                trimmed_text = " ".join(w.text for w in trimmed_words)
-                results.append(TranscribedSegment(
-                    seg_start=trimmed_words[0].start,
-                    seg_end=trimmed_words[-1].end,
-                    text=trimmed_text,
-                    words=trimmed_words,
-                ))
+        result = transcriber.transcribe_segment(audio_path, seg.start, seg.end)
+        if result.words:
+            all_words.extend(result.words)
         elif result.text:
-            results.append(result)
+            # Aligner 실패 시 세그먼트 전체를 하나의 단어로 취급
+            from .transcribe import WordTimestamp as _WT
+            all_words.append(_WT(text=result.text, start=result.seg_start, end=result.seg_end))
+
+    if not all_words:
+        try:
+            audio_path.unlink()
+        except OSError:
+            pass
+        _progress("analyze", 100, "인식된 텍스트 없음")
+        return {
+            "segments": [],
+            "video_info": {
+                "fps": fps, "width": width, "height": height,
+                "duration": duration,
+            },
+        }
+
+    # Pass 2: 단어 타임스탬프 기준으로 max_seconds마다 분할
+    _progress("analyze", 80, "세그먼트 분할 중")
+    results = _split_words_into_segments(all_words, asr_max_seconds)
 
     # 세그먼트 경계에서 분리된 조사를 이전 세그먼트로 병합
     results = merge_orphan_josa(results)
