@@ -46,17 +46,36 @@ rsync -a --exclude='__pycache__' "$PROJECT_ROOT/silence_cutter/" "$CONTENTS/Reso
 cp "$PROJECT_ROOT/pyproject.toml" "$CONTENTS/Resources/pyproject.toml"
 echo "  ✅ silence_cutter/ → Resources/"
 
-# 4. Copy SwiftPM resource bundle (localization strings etc.)
-echo "[4/5] Bundling SwiftPM resources…"
-RESOURCE_BUNDLE=$(find "$SWIFT_PKG/.build" -name "SilenciApp_SilenciApp.bundle" -type d | head -1)
-if [ -n "$RESOURCE_BUNDLE" ]; then
-    cp -R "$RESOURCE_BUNDLE" "$CONTENTS/Resources/"
-    # Also copy to MacOS/ — Bundle.main.bundleURL points to Contents/MacOS/ in .app bundles
-    cp -R "$RESOURCE_BUNDLE" "$CONTENTS/MacOS/"
-    echo "  ✅ $(basename "$RESOURCE_BUNDLE") → Resources/ + MacOS/"
-else
-    echo "  ⚠️ No SwiftPM resource bundle found (localization may not work)"
-fi
+# 4. Copy localization resources manually (no SwiftPM resource bundle)
+echo "[4/5] Bundling localization resources…"
+LPROJ_SRC="$SWIFT_PKG/Sources/Resources"
+LPROJ_BUNDLE="$CONTENTS/MacOS/SilenciApp_SilenciApp.bundle"
+mkdir -p "$LPROJ_BUNDLE"
+for lproj in "$LPROJ_SRC"/*.lproj; do
+    if [ -d "$lproj" ]; then
+        cp -R "$lproj" "$LPROJ_BUNDLE/"
+    fi
+done
+# Write minimal Info.plist for the bundle (required for code signing)
+cat > "$LPROJ_BUNDLE/Info.plist" << 'BPLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.genelab.silenci.resources</string>
+    <key>CFBundleName</key>
+    <string>SilenciApp_SilenciApp</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundlePackageType</key>
+    <string>BNDL</string>
+</dict>
+</plist>
+BPLIST
+# Also copy to Resources for compatibility
+cp -R "$LPROJ_BUNDLE" "$CONTENTS/Resources/"
+echo "  ✅ Localizations → MacOS/ + Resources/"
 
 # Copy app icon
 ICON_FILE="$SWIFT_PKG/Sources/Resources/AppIcon.icns"
@@ -118,7 +137,7 @@ fi
 if command -v create-dmg &>/dev/null; then
     echo ""
     echo "[7/8] Creating DMG installer…"
-    DMG_PATH="$DIST_DIR/Silenci-v0.3.1-macOS.dmg"
+    DMG_PATH="$DIST_DIR/Silenci-v0.3.2-macOS.dmg"
     rm -f "$DMG_PATH"
 
     create-dmg \

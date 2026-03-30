@@ -12,9 +12,7 @@ let package = Package(
         .executableTarget(
             name: "SilenciApp",
             path: "Sources",
-            resources: [
-                .process("Resources")
-            ]
+            exclude: ["Resources"]
         )
     ]
 )
