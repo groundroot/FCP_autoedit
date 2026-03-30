@@ -85,13 +85,16 @@ def split_long_speech_segments(
     *,
     max_segment_seconds: float = 15.0,
     min_segment_seconds: float = 3.0,
-    search_window_seconds: float = 1.0,
+    search_window_seconds: float = 2.0,
     frame_ms: int = 20,
 ) -> List[SpeechSegment]:
     """긴 음성 구간을 ASR용으로 더 짧게 분할.
 
     VAD가 배경음/룸톤 때문에 긴 덩어리로 붙는 경우가 있어, 전사용 경로에서만
-    저에너지 지점을 찾아 세그먼트를 잘게 나눈다.
+    실제 묵음 구간 또는 저에너지 지점을 찾아 세그먼트를 잘게 나눈다.
+
+    개선: 단어 중간이 아닌 실제 발화 사이의 묵음(pause)에서 분할되도록
+    묵음 구간 탐색을 우선하고, 탐색 범위를 ±2초로 확장.
     """
     refined: list[SpeechSegment] = []
     for seg in segments:
@@ -139,6 +142,11 @@ def _split_long_segment(
     rms = np.sqrt(np.mean(frames * frames, axis=1) + 1e-12)
     frame_seconds = frame_size / sr
 
+    # 묵음 판별 임계값: 전체 RMS의 하위 15% 수준
+    silence_threshold = float(np.percentile(rms, 15))
+    # 묵음으로 간주할 최소 연속 프레임 수 (60ms = 3 프레임 @20ms)
+    min_silence_frames = max(2, int(0.06 / frame_seconds))
+
     refined: list[SpeechSegment] = []
     cursor = segment.start
     segment_end = segment.end
@@ -157,8 +165,16 @@ def _split_long_segment(
             if idx_end <= idx_start:
                 split_at = fallback
             else:
-                local_min = int(np.argmin(rms[idx_start:idx_end + 1])) + idx_start
-                split_at = segment.start + ((local_min + 0.5) * frame_seconds)
+                # 1순위: 묵음 구간(연속 저에너지) 중 target에 가장 가까운 지점
+                split_at = _find_silence_split(
+                    rms, idx_start, idx_end, target,
+                    segment.start, frame_seconds,
+                    silence_threshold, min_silence_frames,
+                )
+                # 2순위: 묵음 못 찾으면 최소 에너지 지점
+                if split_at is None:
+                    local_min = int(np.argmin(rms[idx_start:idx_end + 1])) + idx_start
+                    split_at = segment.start + ((local_min + 0.5) * frame_seconds)
 
         split_at = max(cursor + min_segment_seconds, min(split_at, segment_end - min_segment_seconds))
         if split_at <= cursor:
@@ -169,3 +185,51 @@ def _split_long_segment(
 
     refined.append(SpeechSegment(start=cursor, end=segment_end))
     return refined
+
+
+def _find_silence_split(
+    rms: np.ndarray,
+    idx_start: int,
+    idx_end: int,
+    target_time: float,
+    seg_start: float,
+    frame_seconds: float,
+    threshold: float,
+    min_frames: int,
+) -> float | None:
+    """탐색 범위 내에서 묵음 구간의 중앙점을 찾아 반환.
+
+    묵음 구간 = threshold 이하의 RMS가 min_frames 이상 연속.
+    여러 묵음 구간이 있으면 target_time에 가장 가까운 것을 선택.
+    """
+    silence_regions = []
+    run_start = None
+
+    for i in range(idx_start, idx_end + 1):
+        if rms[i] <= threshold:
+            if run_start is None:
+                run_start = i
+        else:
+            if run_start is not None and (i - run_start) >= min_frames:
+                silence_regions.append((run_start, i - 1))
+            run_start = None
+
+    # 마지막 구간 처리
+    if run_start is not None and (idx_end + 1 - run_start) >= min_frames:
+        silence_regions.append((run_start, idx_end))
+
+    if not silence_regions:
+        return None
+
+    # target_time에 가장 가까운 묵음 구간의 중앙점 선택
+    best = None
+    best_dist = float("inf")
+    for start_idx, end_idx in silence_regions:
+        mid_idx = (start_idx + end_idx) / 2
+        mid_time = seg_start + (mid_idx + 0.5) * frame_seconds
+        dist = abs(mid_time - target_time)
+        if dist < best_dist:
+            best_dist = dist
+            best = mid_time
+
+    return best
