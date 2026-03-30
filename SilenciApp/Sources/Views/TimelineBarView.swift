@@ -145,3 +145,22 @@ struct TimelineBarView: View {
     .frame(height: 60)
     .padding()
 }
+
+// MARK: - Wrapper that isolates currentTime observation
+
+/// Reads videoModel.currentTime in its own body so the parent view
+/// is NOT invalidated on every 0.1s tick — only this small wrapper rerenders.
+struct TimelineBarWrapper: View {
+    let segments: [Segment]
+    var videoModel: VideoPlayerModel
+    let onSeek: (TimeInterval) -> Void
+
+    var body: some View {
+        TimelineBarView(
+            segments: segments,
+            duration: videoModel.duration,
+            currentTime: videoModel.currentTime,
+            onSeek: onSeek
+        )
+    }
+}

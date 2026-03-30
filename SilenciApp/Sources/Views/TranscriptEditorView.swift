@@ -2,16 +2,17 @@ import SwiftUI
 
 /// Vrew-style transcript editor with card-based clip layout.
 /// Shows each segment as a ClipCardView. Discarded clips collapse.
-/// Supports current-clip highlighting via currentTime.
+/// Observes videoModel directly for current-clip highlighting.
 struct TranscriptEditorView: View {
     @Bindable var analysisService: AnalysisService
     var onSeek: (TimeInterval) -> Void
-    var currentTime: TimeInterval = 0
+    /// Video model for playback time — observed only for clip-change detection.
+    var videoModel: VideoPlayerModel
 
     /// The clip index that is visually highlighted.
-    /// Updated via onChange(of: currentTime) — only fires when the clip actually changes,
-    /// so the body is NOT re-evaluated on every 0.1s time tick.
     @State private var highlightedIndex: Int?
+    /// Timer to poll currentTime at a lower rate than the 10Hz observer.
+    @State private var pollTimer: Timer?
 
     var body: some View {
         if analysisService.segments.isEmpty {
@@ -22,20 +23,12 @@ struct TranscriptEditorView: View {
             )
         } else {
             scrollContent
-                // Compute active clip outside body — only update @State when clip changes
-                .onChange(of: currentTime) { _, time in
-                    let newIndex = analysisService.segments.firstIndex { seg in
-                        seg.isKept && time >= seg.start && time < seg.end
-                    }
-                    if newIndex != highlightedIndex {
-                        highlightedIndex = newIndex
-                    }
-                }
+                .onAppear { startPolling() }
+                .onDisappear { stopPolling() }
         }
     }
 
-    /// The scroll content is a separate computed property so that it only re-evaluates
-    /// when highlightedIndex (@State) changes — NOT when currentTime changes.
+    /// The scroll list — only re-evaluates when highlightedIndex or segments change.
     @ViewBuilder
     private var scrollContent: some View {
         ScrollView {
@@ -62,6 +55,29 @@ struct TranscriptEditorView: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 4)
         }
+    }
+
+    // MARK: - Polling (avoids @Observable dependency on currentTime)
+
+    /// Poll at ~2Hz instead of 10Hz to find active clip. This does NOT
+    /// trigger SwiftUI body re-evaluation — it only mutates @State when the clip changes.
+    private func startPolling() {
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            Task { @MainActor in
+                let time = videoModel.currentTime
+                let newIndex = analysisService.segments.firstIndex { seg in
+                    seg.isKept && time >= seg.start && time < seg.end
+                }
+                if newIndex != highlightedIndex {
+                    highlightedIndex = newIndex
+                }
+            }
+        }
+    }
+
+    private func stopPolling() {
+        pollTimer?.invalidate()
+        pollTimer = nil
     }
 }
 
@@ -133,6 +149,6 @@ struct TimeField: View {
         Segment(start: 3.0, end: 5.5, text: "This is a test segment", isKept: true),
         Segment(start: 6.0, end: 8.0, text: "Deleted segment", isKept: false),
     ]
-    return TranscriptEditorView(analysisService: service, onSeek: { _ in }, currentTime: 1.0)
+    return TranscriptEditorView(analysisService: service, onSeek: { _ in }, videoModel: VideoPlayerModel())
         .frame(width: 300, height: 400)
 }

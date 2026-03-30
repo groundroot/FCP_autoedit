@@ -102,7 +102,7 @@ struct ContentView: View {
                         analysisService.cancelAnalysis()
                     })
                 } else if !analysisService.segments.isEmpty {
-                    TranscriptEditorView(analysisService: analysisService, onSeek: { videoModel.seek(to: $0) }, currentTime: videoModel.currentTime)
+                    TranscriptEditorView(analysisService: analysisService, onSeek: { videoModel.seek(to: $0) }, videoModel: videoModel)
                 } else {
                     Spacer()
                     Text(L10n.tr("main.load_video"))
@@ -139,10 +139,9 @@ struct ContentView: View {
 
                 Divider()
 
-                TimelineBarView(
+                TimelineBarWrapper(
                     segments: analysisService.segments,
-                    duration: videoModel.duration,
-                    currentTime: videoModel.currentTime,
+                    videoModel: videoModel,
                     onSeek: { videoModel.seek(to: $0) }
                 )
                 .frame(height: 60)
