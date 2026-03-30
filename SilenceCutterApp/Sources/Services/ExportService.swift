@@ -166,10 +166,12 @@ struct ExportService {
             let clipName = xmlEscape(String(seg.exportText.prefix(30)))
 
             // Build subtitle titles inside asset-clip
-            let subtitleText = seg.exportText
-            let subtitleChunks = splitSubtitle(subtitleText, maxChars: maxSubtitleChars)
+            // Use word-level timing when available for accurate subtitle sync.
+            let wordChunks = seg.words.isEmpty
+                ? subtitleChunksFromText(seg.exportText, maxChars: maxSubtitleChars, segStart: seg.start, segEnd: seg.end)
+                : subtitleChunksFromWords(seg.words.filter(\.isKept), maxChars: maxSubtitleChars)
 
-            if subtitleChunks.isEmpty || subtitleText.isEmpty {
+            if wordChunks.isEmpty {
                 // No subtitle — self-closing asset-clip
                 xml += """
                             <asset-clip ref="\(assetId)" \
@@ -190,31 +192,13 @@ struct ExportService {
                 tcFormat="NDF">\n
                 """
 
-                // Distribute subtitle chunks across clip duration
-                let chunkCount = subtitleChunks.count
-                for (ci, chunk) in subtitleChunks.enumerated() {
+                // Distribute subtitle chunks with word-level timing
+                for wc in wordChunks {
                     tsCounter += 1
                     let tsId = "ts\(tsCounter)"
 
-                    // Distribute chunks evenly across the clip using words timing if available
-                    let chunkStartFrac: Double
-                    let chunkEndFrac: Double
-                    if seg.words.count >= chunkCount {
-                        // Use word timing for chunk boundaries
-                        let wordsPerChunk = seg.words.count / chunkCount
-                        let startWordIdx = ci * wordsPerChunk
-                        let endWordIdx = min((ci + 1) * wordsPerChunk, seg.words.count) - 1
-                        chunkStartFrac = seg.words[startWordIdx].start
-                        chunkEndFrac = seg.words[endWordIdx].end
-                    } else {
-                        // Even distribution
-                        let segDur = seg.end - seg.start
-                        chunkStartFrac = seg.start + segDur * Double(ci) / Double(chunkCount)
-                        chunkEndFrac = seg.start + segDur * Double(ci + 1) / Double(chunkCount)
-                    }
-
-                    var chunkStart = snapToFrame(seconds: chunkStartFrac, frameNum: frameNum, frameDen: frameDen)
-                    var chunkEnd = snapToFrame(seconds: chunkEndFrac, frameNum: frameNum, frameDen: frameDen)
+                    var chunkStart = snapToFrame(seconds: wc.start, frameNum: frameNum, frameDen: frameDen)
+                    var chunkEnd = snapToFrame(seconds: wc.end, frameNum: frameNum, frameDen: frameDen)
 
                     // Clamp to clip boundaries
                     if chunkStart.0 * srcStart.1 < srcStart.0 * chunkStart.1 { chunkStart = srcStart }
@@ -223,7 +207,7 @@ struct ExportService {
                     let chunkDur = subRational(chunkEnd, chunkStart)
                     guard chunkDur.0 > 0 else { continue }
 
-                    let escapedChunk = xmlEscape(chunk)
+                    let escapedChunk = xmlEscape(wc.text)
 
                     xml += """
                                 <title ref="r3" lane="1" \
@@ -362,5 +346,87 @@ struct ExportService {
             chunks.append(current)
         }
         return chunks
+    }
+
+    // MARK: - Word-based subtitle chunking (accurate timing)
+
+    /// A subtitle chunk with text and precise timing from word timestamps.
+    struct SubtitleChunk {
+        let text: String
+        let start: Double
+        let end: Double
+    }
+
+    /// Split words into subtitle chunks using word-level timing.
+    /// Mirrors Python's _split_subtitle logic — breaks at natural points or maxChars.
+    private static func subtitleChunksFromWords(_ words: [Word], maxChars: Int) -> [SubtitleChunk] {
+        guard !words.isEmpty else { return [] }
+
+        var chunks: [SubtitleChunk] = []
+        var currentWords: [Word] = []
+        var currentText = ""
+
+        for (i, word) in words.enumerated() {
+            let candidate = currentText.isEmpty ? word.text : "\(currentText) \(word.text)"
+            currentWords.append(word)
+            currentText = candidate
+
+            let isLast = (i == words.count - 1)
+            var shouldBreak = false
+
+            if isLast {
+                shouldBreak = true
+            } else if isNaturalBreak(word.text) && currentText.count >= 6 {
+                shouldBreak = true
+            } else if currentText.count >= maxChars {
+                // Check if next word is short (≤3 chars) — include it to avoid orphan
+                let nextWord = words[i + 1].text
+                if nextWord.count <= 3 && currentText.count < maxChars + 8 {
+                    // Don't break yet — include the short next word
+                } else {
+                    shouldBreak = true
+                }
+            }
+
+            if shouldBreak && !currentText.isEmpty {
+                chunks.append(SubtitleChunk(
+                    text: currentText,
+                    start: currentWords.first!.start,
+                    end: currentWords.last!.end
+                ))
+                currentWords = []
+                currentText = ""
+            }
+        }
+
+        return chunks
+    }
+
+    /// Fallback: create subtitle chunks from plain text when words are unavailable.
+    /// Evenly distributes timing across the segment.
+    private static func subtitleChunksFromText(_ text: String, maxChars: Int, segStart: Double, segEnd: Double) -> [SubtitleChunk] {
+        let textChunks = splitSubtitle(text, maxChars: maxChars)
+        guard !textChunks.isEmpty else { return [] }
+
+        let segDur = segEnd - segStart
+        let count = textChunks.count
+        return textChunks.enumerated().map { i, chunk in
+            SubtitleChunk(
+                text: chunk,
+                start: segStart + segDur * Double(i) / Double(count),
+                end: segStart + segDur * Double(i + 1) / Double(count)
+            )
+        }
+    }
+
+    /// Check if a word ends at a natural sentence/clause break.
+    private static let sentenceEndPattern = try! NSRegularExpression(pattern: "[.!?。，,]$")
+    private static let clauseEndPattern = try! NSRegularExpression(pattern: "(요|다|까|죠|고|서|며|면|지만|는데|니까|거든|래요|세요|습니다|합니다|했고|었고|였고|인데|해서|라서|더니|으니|하고)$")
+
+    private static func isNaturalBreak(_ text: String) -> Bool {
+        let range = NSRange(text.startIndex..., in: text)
+        if sentenceEndPattern.firstMatch(in: text, range: range) != nil { return true }
+        if clauseEndPattern.firstMatch(in: text, range: range) != nil { return true }
+        return false
     }
 }
