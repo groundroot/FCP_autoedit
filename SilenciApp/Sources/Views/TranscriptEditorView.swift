@@ -8,15 +8,10 @@ struct TranscriptEditorView: View {
     var onSeek: (TimeInterval) -> Void
     var currentTime: TimeInterval = 0
 
-    /// Last auto-scrolled clip index — prevents redundant scrollTo calls.
-    @State private var lastScrolledIndex: Int?
-
-    /// Computed index of the currently playing clip
-    private var activeClipIndex: Int? {
-        analysisService.segments.firstIndex { seg in
-            seg.isKept && currentTime >= seg.start && currentTime < seg.end
-        }
-    }
+    /// The clip index that is visually highlighted.
+    /// Updated via onChange(of: currentTime) — only fires when the clip actually changes,
+    /// so the body is NOT re-evaluated on every 0.1s time tick.
+    @State private var highlightedIndex: Int?
 
     var body: some View {
         if analysisService.segments.isEmpty {
@@ -26,41 +21,46 @@ struct TranscriptEditorView: View {
                 description: Text(L10n.tr("transcript.no_speech"))
             )
         } else {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(Array(analysisService.segments.enumerated()), id: \.element.id) { index, segment in
-                            ClipCardView(
-                                index: index,
-                                segment: $analysisService.segments[index],
-                                onSeek: onSeek,
-                                onSplit: {
-                                    analysisService.splitSegment(at: index)
-                                },
-                                onSplitAtWord: { wordIndex in
-                                    analysisService.splitSegment(at: index, wordIndex: wordIndex)
-                                },
-                                onMerge: index < analysisService.segments.count - 1 ? {
-                                    analysisService.mergeWithNext(at: index)
-                                } : nil,
-                                isActive: activeClipIndex == index
-                            )
-                            .id(segment.id)
-                        }
+            scrollContent
+                // Compute active clip outside body — only update @State when clip changes
+                .onChange(of: currentTime) { _, time in
+                    let newIndex = analysisService.segments.firstIndex { seg in
+                        seg.isKept && time >= seg.start && time < seg.end
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
+                    if newIndex != highlightedIndex {
+                        highlightedIndex = newIndex
+                    }
                 }
-                .onChange(of: activeClipIndex) { _, newIndex in
-                    // Only scroll when clip actually changes — not on every currentTime tick
-                    guard let idx = newIndex,
-                          idx != lastScrolledIndex,
-                          idx < analysisService.segments.count else { return }
-                    lastScrolledIndex = idx
-                    // Use non-animated scroll to avoid fighting user gestures
-                    proxy.scrollTo(analysisService.segments[idx].id, anchor: .center)
+        }
+    }
+
+    /// The scroll content is a separate computed property so that it only re-evaluates
+    /// when highlightedIndex (@State) changes — NOT when currentTime changes.
+    @ViewBuilder
+    private var scrollContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 4) {
+                ForEach(Array(analysisService.segments.enumerated()), id: \.element.id) { index, segment in
+                    ClipCardView(
+                        index: index,
+                        segment: $analysisService.segments[index],
+                        onSeek: onSeek,
+                        onSplit: {
+                            analysisService.splitSegment(at: index)
+                        },
+                        onSplitAtWord: { wordIndex in
+                            analysisService.splitSegment(at: index, wordIndex: wordIndex)
+                        },
+                        onMerge: index < analysisService.segments.count - 1 ? {
+                            analysisService.mergeWithNext(at: index)
+                        } : nil,
+                        isActive: highlightedIndex == index
+                    )
+                    .id(segment.id)
                 }
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
         }
     }
 }
@@ -102,7 +102,9 @@ struct TimeField: View {
             .focused($isFocused)
             .onAppear { text = formatTime(seconds) }
             .onChange(of: seconds) { _, newValue in
-                if !isFocused { text = formatTime(newValue) }
+                if !isFocused {
+                    text = formatTime(newValue)
+                }
             }
             .onSubmit {
                 if let parsed = parseTime(text) {
@@ -115,24 +117,22 @@ struct TimeField: View {
                 if !focused {
                     if let parsed = parseTime(text) {
                         seconds = parsed
-                    } else {
-                        text = formatTime(seconds)
                     }
+                    text = formatTime(seconds)
                 }
             }
     }
 }
 
-#Preview("With Segments") {
-    @Previewable @State var service = AnalysisService()
-    TranscriptEditorView(analysisService: service, onSeek: { _ in }, currentTime: 1.0)
-        .frame(width: 350, height: 500)
-        .preferredColorScheme(.dark)
-        .onAppear {
-            service.segments = [
-                Segment(start: 0.5, end: 3.2, text: "안녕하세요, 오늘은 날씨가 좋습니다."),
-                Segment(start: 5.0, end: 8.1, text: "테스트 세그먼트입니다.", isKept: false),
-                Segment(start: 62.3, end: 65.7, text: "1분이 넘는 타임스탬프 예시"),
-            ]
-        }
+// MARK: - Previews
+
+#Preview("With segments") {
+    let service = AnalysisService()
+    service.segments = [
+        Segment(start: 0.0, end: 2.5, text: "Hello world", isKept: true),
+        Segment(start: 3.0, end: 5.5, text: "This is a test segment", isKept: true),
+        Segment(start: 6.0, end: 8.0, text: "Deleted segment", isKept: false),
+    ]
+    return TranscriptEditorView(analysisService: service, onSeek: { _ in }, currentTime: 1.0)
+        .frame(width: 300, height: 400)
 }
