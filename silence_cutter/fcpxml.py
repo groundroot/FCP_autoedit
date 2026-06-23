@@ -67,57 +67,72 @@ def _is_natural_break(word_text: str) -> bool:
     return False
 
 
-def _split_subtitle(words: List[WordTimestamp], max_chars: int = 20) -> List[dict]:
-    """단어 리스트를 자연스러운 문장 경계에서 분할.
-
-    1순위: 구두점/종결어미에서 분할
-    2순위: max_chars 초과 시 강제 분할
-
-    반환: [{"text": str, "start": float, "end": float}, ...]
+def _split_subtitle(words: List[WordTimestamp], max_chars: int = 28) -> List[dict]:
+    """단어 리스트를 자연스러운 문장 경계에서 분할 (맥락 유지).
+    
+    1순위: 문장 끝(종결어미/구두점)에서 분할
+    2순위: 길이 초과 시 마지막 자연 경계(절 경계)로 되돌려 끊기
     """
     if not words:
         return []
 
+    def mk(ws):
+        return {"text": " ".join(w.text for w in ws),
+                "start": ws[0].start, "end": ws[-1].end}
+
     chunks = []
-    current_words = []
-    current_text = ""
-    chunk_start = words[0].start
+    cur = []
+    last_break = -1
+    min_chars = int(max_chars * 0.4)  # 최소 길이 지정 (기본 28의 40% = 11자)
 
-    for i, word in enumerate(words):
-        candidate = (current_text + " " + word.text).strip() if current_text else word.text
-        current_words.append(word)
-        current_text = candidate
-
-        is_last = (i == len(words) - 1)
-        should_break = False
+    i = 0
+    n = len(words)
+    while i < n:
+        w = words[i]
+        cur.append(w)
+        cur_text = " ".join(x.text for x in cur)
+        is_last = (i == n - 1)
 
         if is_last:
-            should_break = True
-        elif _is_natural_break(word.text):
-            # 자연스러운 끊김 지점 — 최소 길이 이상이면 분할
-            if len(current_text) >= 6:
-                should_break = True
-        elif len(current_text) >= max_chars:
-            # 강제 분할: max_chars 초과 — 단, 다음 단어가 조사/접미사면 붙여서 유지
-            # (예: "없었기" 에서 자르면 "때문에"가 혼자 남는 문제 방지)
-            # 단, max_chars + 8 초과 시 무조건 분할 (무한 누적 방지)
-            next_word = words[i + 1].text if i + 1 < len(words) else ""
-            if len(next_word) <= 3 and len(current_text) < max_chars + 8:
-                # 짧은 다음 단어는 포함시키고 그 다음에서 자르기
-                pass
-            else:
-                should_break = True
+            chunks.append(mk(cur))
+            cur = []
+            last_break = -1
+            i += 1
+            continue
 
-        if should_break and current_text:
-            chunks.append({
-                "text": current_text,
-                "start": chunk_start,
-                "end": current_words[-1].end,
-            })
-            current_words = []
-            current_text = ""
-            if not is_last:
-                chunk_start = words[i + 1].start
+        # 문장 끝 — 최소 길이 이상이면 즉시 분할
+        if _SENTENCE_END.search(w.text) and len(cur_text) >= min_chars:
+            chunks.append(mk(cur))
+            cur = []
+            last_break = -1
+            i += 1
+            continue
+
+        # 절 경계/호흡 쉼 — 끊기 좋은 후보로 기록
+        if _CLAUSE_END.search(w.text):
+            last_break = len(cur) - 1
+
+        # 길이 초과 — 자연 경계로 되돌려 끊기
+        if len(cur_text) >= max_chars:
+            nxt = words[i + 1].text
+            head_len = len(" ".join(x.text for x in cur[:last_break + 1])) if last_break >= 0 else 0
+            if last_break >= 0 and last_break < len(cur) - 1 and head_len >= min_chars:
+                # 마지막 절 경계 뒤에서 분할(앞 조각이 최소 길이 이상일 때만)
+                head = cur[:last_break + 1]
+                tail = cur[last_break + 1:]
+                chunks.append(mk(head))
+                cur = tail
+                last_break = -1
+            elif len(nxt) <= 3 and len(cur_text) < max_chars + 3:
+                pass  # 짧은 조사/수식어는 흡수해 분리 방지
+            else:
+                chunks.append(mk(cur))
+                cur = []
+                last_break = -1
+        i += 1
+
+    if cur:
+        chunks.append(mk(cur))
 
     # 겹침 제거: 이전 청크의 end가 다음 청크의 start보다 크면 맞춤
     for i in range(1, len(chunks)):

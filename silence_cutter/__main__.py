@@ -188,6 +188,13 @@ def cmd_resub(args):
         aligner_model=args.aligner_model,
         font_size=args.font_size,
         max_subtitle_chars=args.max_subtitle_chars,
+        min_subtitle_chars=args.min_subtitle_chars,
+        fill_gaps=not args.no_gap_fill,
+        gap_bridge_sec=args.gap_bridge_sec,
+        script_path=args.script,
+        remove_silence=not args.no_remove_silence,
+        min_silence_sec=args.min_silence_sec,
+        silence_pad_ms=args.silence_pad_ms,
         export_itt=args.itt,
         language_code=lang_code,
     )
@@ -218,7 +225,7 @@ def main():
     cut_parser.add_argument("--min-silence-ms", type=int, default=300, help="최소 무음 구간 ms (기본: 300)")
     cut_parser.add_argument("--speech-pad-ms", type=int, default=100, help="음성 앞뒤 패딩 ms (기본: 100)")
     cut_parser.add_argument("--font-size", type=int, default=42, help="자막 폰트 크기 (기본: 42)")
-    cut_parser.add_argument("--max-subtitle-chars", type=int, default=20, help="자막 한 줄 최대 글자수 (기본: 20)")
+    cut_parser.add_argument("--max-subtitle-chars", type=int, default=28, help="자막 한 줄 최대 글자수 (기본: 28)")
     cut_parser.add_argument("--itt", action="store_true", help="iTT 자막 파일도 함께 생성")
     cut_parser.add_argument("--project-name", type=str, default="SilenceCut", help="FCP 프로젝트 이름")
 
@@ -235,7 +242,7 @@ def main():
                                help="ASR 모델 ID")
     script_parser.add_argument("--vad-threshold", type=float, default=0.5, help="VAD 민감도 (기본: 0.5)")
     script_parser.add_argument("--min-silence-ms", type=int, default=300, help="최소 무음 길이 ms (기본: 300)")
-    script_parser.add_argument("--max-subtitle-chars", type=int, default=20, help="자막 한 줄 최대 글자수 (기본: 20)")
+    script_parser.add_argument("--max-subtitle-chars", type=int, default=28, help="자막 한 줄 최대 글자수 (기본: 28)")
     script_parser.add_argument("--itt", action="store_true", help="Final Cut Pro용 iTT 자막 파일도 함께 생성")
 
     # --- extract 커맨드 ---
@@ -260,7 +267,16 @@ def main():
     resub_parser.add_argument("--aligner-model", type=str, default="mlx-community/Qwen3-ForcedAligner-0.6B-8bit",
                             help="ForcedAligner 모델 ID")
     resub_parser.add_argument("--font-size", type=int, default=42, help="자막 폰트 크기 (기본: 42)")
-    resub_parser.add_argument("--max-subtitle-chars", type=int, default=20, help="자막 한 줄 최대 글자수 (기본: 20)")
+    resub_parser.add_argument("--max-subtitle-chars", type=int, default=28, help="자막 한 줄 최대 글자수 (기본: 28)")
+    resub_parser.add_argument("--min-subtitle-chars", type=int, default=11, help="자막 한 줄 최소 글자수 (기본: 11)")
+    resub_parser.add_argument("--script", type=str, default=None, help="대본 .md 경로 (오타/고유명사 보수적 교정)")
+    resub_parser.add_argument("--no-gap-fill", action="store_true", help="짧은 끊김 메움 비활성화 (순수 단어 타이밍)")
+    resub_parser.add_argument("--gap-bridge-sec", type=float, default=0.4,
+                            help="이 값 이하의 짧은 끊김만 이어붙임 초 (기본 0.4, 긴 침묵은 공백 유지)")
+    resub_parser.add_argument("--no-remove-silence", action="store_true", help="무음제거 버전(결과물 2) 생성 안 함")
+    resub_parser.add_argument("--min-silence-sec", type=float, default=0.7,
+                            help="제거할 최소 무음 길이 초 (기본 0.7 / 강의 0.4 / 인터뷰 0.6 / 설교 0.8)")
+    resub_parser.add_argument("--silence-pad-ms", type=int, default=100, help="음성 앞뒤 패딩 ms (기본 100)")
     resub_parser.add_argument("--itt", action="store_true", help="iTT 자막 파일도 함께 생성")
 
     # --- multi 커맨드 ---
@@ -280,7 +296,7 @@ def main():
     multi_parser.add_argument("--min-silence-ms", type=int, default=300, help="최소 무음 구간 ms")
     multi_parser.add_argument("--speech-pad-ms", type=int, default=100, help="음성 앞뒤 패딩 ms")
     multi_parser.add_argument("--font-size", type=int, default=42, help="자막 폰트 크기")
-    multi_parser.add_argument("--max-subtitle-chars", type=int, default=20, help="자막 한 줄 최대 글자수")
+    multi_parser.add_argument("--max-subtitle-chars", type=int, default=28, help="자막 한 줄 최대 글자수")
     multi_parser.add_argument("--itt", action="store_true", help="iTT 자막 파일도 함께 생성")
     multi_parser.add_argument("--project-name", type=str, default="SilenceCut", help="FCP 프로젝트 이름")
 
