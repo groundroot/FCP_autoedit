@@ -1,521 +1,350 @@
 <div align="center">
 
-<img src="docs/logo.svg" width="200" alt="Silenci logo"/>
+# FCP_autoedit
 
-# 🎬 Silenci
+**파이널 컷 프로용 AI 롱폼 자막 자동 생성 도구**
 
-**AI 무음 자동 편집 · 자막 생성 도구**
-
-Silero VAD + Qwen3-ASR 기반 — macOS Apple Silicon 최적화
+FCP에서 내보낸 FCPXML을 넣으면 → AI가 음성을 전사하고 정렬해 → 바로 임포트 가능한 자막 파일 2개를 만들어줍니다
 
 [![macOS](https://img.shields.io/badge/macOS-14.0+-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![MLX](https://img.shields.io/badge/MLX-Apple_Silicon-FF6B35?style=flat-square&logo=apple&logoColor=white)](https://github.com/ml-explore/mlx)
+[![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-최적화-FF6B35?style=flat-square&logo=apple&logoColor=white)](#)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/leeyc09/Silence-Cutter?style=flat-square&color=yellow)](https://github.com/leeyc09/Silence-Cutter/stargazers)
 
-[English](README.md)
-
-<br/>
-
-<img src="docs/waveform.svg" width="680" alt="Waveform before and after silence removal"/>
-
-<br/>
-
-영상에서 무음 구간을 자동 감지·제거하고, 단어 단위 타임스탬프 자막과 함께
-FCPXML을 생성합니다.
-
-[macOS 앱](#-macos-앱) · [CLI 사용법](#-cli-명령어) · [설치](#-설치)
+[English →](README.md)
 
 </div>
 
 ---
 
-## ✨ 주요 기능
+## FCP_autoedit란?
 
-<table>
-<tr>
-<td width="50%">
+자막이 없는 상태로 내보낸 파이널 컷 프로 프로젝트(`.fcpxmld`)를 입력받아, AI로 음성을 인식·정렬한 뒤 **자막이 삽입된 FCPXML 2개**를 자동으로 생성합니다.
 
-### 🔇 무음 컷 편집
-- Silero VAD로 음성/무음 정밀 감지
-- 무음 구간 자동 제거 → 컴팩트 타임라인
-- FCPXML 출력 (Final Cut Pro 바로 임포트)
-- 멀티 영상 병합 지원
-
-</td>
-<td width="50%">
-
-### 🗣️ AI 음성 인식
-- **Qwen3-ASR** — 고품질 음성→텍스트 (0.6B / 1.7B)
-- **Qwen3-ForcedAligner** — 단어 단위 정밀 타임스탬프
-- 다국어: 한국어 · 영어 · 일본어 · 중국어
-- MLX 8-bit 양자화 — Apple Silicon 최적화
-
-</td>
-</tr>
-<tr>
-<td>
-
-### ✂️ 스마트 자막 분할
-- 한국어 종결어미·구두점 기반 자연스러운 줄 분할
-- 단어 타임스탬프 기반 정확한 싱크
-- FCPXML 내장 타이틀 + iTT 캡션, SRT 포맷 지원
-- 폰트 크기, 최대 글자 수 커스터마이징
-
-</td>
-<td>
-
-### 🔄 FCPXML 자막 재생성
-- Final Cut Pro에서 편집한 FCPXML 가져오기
-- 수정된 클립 구조 기반으로 자막 재생성
-- 클립 순서 변경·겹침 상황 정확 처리
-- 재생성 시 언어·모델 선택 가능
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 📱 2가지 인터페이스
-- **macOS 네이티브 앱** — 드래그 앤 드롭, 실시간 미리보기
-- **CLI** — 스크립트/자동화에 최적
-
-</td>
-<td>
-
-### 🌐 다국어 지원
-- 앱 UI: 한국어 · 영어 · 일본어 · 중국어
-- 설정에서 앱 언어 변경 (시스템 언어 독립)
-- 음성 인식 4개 이상 언어 지원
-
-</td>
-</tr>
-</table>
-
----
-
-## 🔬 처리 파이프라인
-
-<div align="center">
-<img src="docs/pipeline.svg" width="800" alt="Processing pipeline diagram"/>
-</div>
-
-### 2-Pass ASR — 단어 잘림 방지
-
-기존 도구들은 오디오를 시간 기반으로 분할 후 ASR을 수행하여 단어 중간에서 잘리는 문제가 있습니다.
-Silenci는 **2-Pass 방식**으로 이를 해결합니다:
+인터뷰·설교·강의 등 **롱폼 영상**에 최적화되어 있습니다.  
+자막은 의미 단위로 자연스럽게 끊어지며, 실제 음성 타이밍과 정확하게 일치합니다.
 
 ```
-Pass 1:  VAD → 큰 청크(30초)로 ASR + ForcedAligner → 단어별 타임스탬프 확보
-Pass 2:  단어의 end_time 경계에서만 분할 → 절대 단어 중간에서 잘리지 않음
+입력:  interview_edit.fcpxmld        ← 자막 없는 FCP 프로젝트
+
+출력:  interview_edit_롱폼자막_공백메움.fcpxmld          ← 원본 편집 + 자막
+       interview_edit_롱폼자막_공백메움_무음제거.fcpxmld  ← 무음 제거 + 자막
 ```
 
-분할 시 단어 간 **gap(묵음)이 가장 큰 지점**을 우선 선택하여 자연스러운 문장 경계에서 나뉩니다.
+---
+
+## 주요 기능
+
+### 한 번 실행으로 결과물 2개
+
+| 결과물 | 설명 |
+|--------|------|
+| **공백메움** | 원본 컷 편집·타임라인 그대로 유지. 자막은 실제 발화 타이밍을 따름. 문장 사이 침묵은 공백으로 남음(의도적). |
+| **무음제거** | 설정 임계값 이상의 무음 구간이 제거되어 타임라인이 압축됨. 자막은 교집합 분배 방식으로 재배치되어 빈 프레임 없이 연속. |
 
 ---
 
-## 🏗️ 아키텍처
+### 등급제 자막 분할 — 의미 단위 기반
 
-<div align="center">
-<img src="docs/architecture.svg" width="800" alt="Architecture diagram"/>
-</div>
+자막은 글자 수만이 아닌 **의미 단위 경계**에서 끊어집니다.  
+세 가지 분할 등급이 우선순위 순서로 적용됩니다:
 
-Swift macOS 앱이 Python subprocess와 **JSON-RPC 2.0** 프로토콜로 통신합니다.
-stdin/stdout 파이프를 통해 요청·응답을 주고받으며, 진행률 알림도 실시간으로 전달됩니다.
+| 등급 | 조건 단어 예시 | 동작 |
+|------|--------------|------|
+| **Grade 3** — 종결어미 | `습니다` `합니다` `에요` `네요` `는데요` `거든요` `.` `!` `?` | 최소 글자(8자) 이상이면 **즉시 분할** |
+| **Grade 2** — 접속어미 | `고` `서` `해서` `는데` `지만` `면서` `,` | 길이 초과 시 분할 기준으로 사용. 시청자는 "이어진다"는 느낌을 자연스럽게 받음 |
+| **Grade 1** — 조사 뒤 | `을` `를` `은` `는` `에서` `로` `까지` | 마지막 수단. `은`·`는` 같은 단독 조사 단어로 끝나는 자막은 생성되지 않음 |
+
+**길이 초과 처리:** 자막이 `max_chars`(기본 27자)를 초과하면, 지금까지 기록된 분할 후보 중 **head 길이가 max_chars 이내이면서 등급이 가장 높은 경계**를 선택해 분할합니다. 분할 후 `i`를 tail 첫 단어로 되돌려 tail이 정상 루프를 다시 거칩니다(tail 쪽 Grade 3 즉시분할 기회 보장).
+
+**해결된 핵심 버그:**
+> 음성: `"…나아가야겠다는 생각을 하였습니다 감사합니다"`
+>
+> ❌ 수정 전: `하였습니다`가 last_break만 기록. `감사합니다`가 마지막 단어이면 두 단어가 합쳐져 → `"하였습니다 감사합니다"` 한 장으로 표시
+>
+> ✅ 수정 후: `하였습니다` → Grade 3 즉시 분할 → `"생각을 하였습니다"` + `"감사합니다"` 각각 독립 자막 카드
 
 ---
 
-## 🖥️ macOS 앱
+### 강제 정렬 타임스탬프 — 시간 재분배 없음
 
-네이티브 SwiftUI 앱으로, 영상을 불러오면 분석 설정 팝업이 자동으로 열리고 — 설정 후 분석·편집·내보내기까지 한 화면에서 처리합니다.
+자막의 시작·종료 시간은 **Qwen3-ForcedAligner 단어 타임스탬프를 그대로** 사용합니다.  
+글자 수로 시간을 재분배하는 방식은 사용하지 않습니다.
 
-<div align="center">
+- `--gap-bridge-sec` 이하(기본 0.4초) 미세 끊김은 이어 붙임 (읽기 편의)
+- 실제 호흡·침묵은 공백으로 유지 — 자막이 발화 타이밍과 일치
 
-### 📋 분석 설정
-<img src="docs/app-settings.jpg" width="720" alt="분석 설정 다이얼로그"/>
+---
 
-<br/>
+### 생성 후 자동 검증
 
-### 📊 실시간 진행률
-<img src="docs/app-progress.jpg" width="720" alt="분석 진행률"/>
+두 결과물 모두 생성 직후 자동으로 검증됩니다:
 
-<br/>
+| 검사 항목 | 결과물 1 | 결과물 2 |
+|-----------|----------|----------|
+| caption 개수 > 0 | ✓ 필수 | ✓ 필수 |
+| 자막 겹침 없음 | ✓ | ✓ |
+| 줄바꿈 없음(한 줄) | ✓ | ✓ |
+| 빈 자막 텍스트 없음 | ✓ | ✓ |
+| 클립 경계 이탈 없음 | ✓ | ✓ |
+| 자막 사이 공백 | ✅ 정상(실제 침묵) | ⚠️ 오류 — 연속이어야 함 |
 
-### ✂️ 단어 단위 편집
-<img src="docs/app-main.jpg" width="720" alt="메인 편집 화면"/>
+출력 예시:
 
-</div>
+```
+[검증:결과물1 공백메움] ✓ caption 47개, 겹침/줄바꿈/경계이탈 없음
+                         (자막 4.3s~312.6s, 발화 사이 침묵 11곳(정상))
+[silence] 음성 구간 8개 (min_silence=0.6s, pad=100ms)
+[검증:결과물2 무음제거] ✓ caption 49개, 겹침/줄바꿈/경계이탈 없음
+                         (자막 0.0s~271.4s)
+```
 
-### 앱 기능
+---
 
-| 기능 | 설명 |
-|:-----|:-----|
-| 🎬 **영상 불러오기** | 드래그 앤 드롭 또는 파일 열기 |
-| ⚙️ **분석 설정 팝업** | 영상 로드 시 자동 표시 — 언어, 모델, VAD 감도 등 설정 |
-| 📊 **실시간 진행률** | 분석/모델 다운로드 진행률 별도 표시 |
-| ⛔ **분석 취소** | 진행 중 취소 버튼으로 즉시 중단 |
-| ✂️ **단어 단위 편집** | 단어별 삭제/복구, 클립 분할/병합 |
-| 🔍 **찾기/바꾸기** | Cmd+F로 자막 텍스트 일괄 수정 |
-| 🔄 **FCPXML 가져오기** | 편집된 FCPXML에서 자막 재생성 (언어·모델 선택, 취소 지원) |
-| 🌐 **앱 언어 설정** | 설정에서 앱 UI 언어 변경 (한국어/영어/일본어/중국어) |
-| 📤 **내보내기** | FCPXML (인라인 iTT 캡션 포함), SRT, iTT — 모두 단어 기반 분할 |
+### FCPXML 안전성 확보
 
-### 분석 설정 옵션
+| 문제 | 해결 방법 |
+|------|-----------|
+| 동일 UID → FCP가 임포트 조용히 무시 | 실행할 때마다 새 UUID 자동 생성 |
+| NAS/SMB 북마크 참조 오류 → FCP 멈춤·충돌 | `<media-rep>`의 모든 `<bookmark>` 자식 요소 자동 제거 |
+| 번들 임포트가 환경에 따라 실패 | `.fcpxmld`(번들)와 `.fcpxml`(평면 파일) 동시 출력. 임포트에는 평면 파일 사용 |
+| 카메라 타임코드 ≠ 파일 오프셋 → 잘못된 오디오 구간 | `file_pos = clip_start_tc − asset_start_tc` 공식을 Python `Fraction`으로 정확 계산 |
 
-| 카테고리 | 설정 | 기본값 | 설명 |
-|:-------:|:-----|:-----:|:-----|
-| 음성 인식 | 언어 | Korean | Korean / English / Japanese / Chinese |
-| | ASR 모델 | 0.6B | 0.6B (빠름) / 1.7B (고품질) |
-| 무음 감지 | VAD 감도 | 0.50 | 0.1~0.9 (낮을수록 민감) |
-| | 최소 무음 | 200ms | 이보다 짧은 무음은 무시 |
-| | 패딩 | 100ms | 음성 구간 앞뒤 여유 |
-| 자막 | 클립 최대 길이 | 8초 | 3~20초 슬라이더 |
-| | 줄 최대 글자 | 20 | 자막 줄바꿈 기준 |
-| | 폰트 크기 | 42pt | FCPXML 자막 폰트 |
+---
 
-> 설정은 UserDefaults에 저장되어 앱 재시작 후에도 유지됩니다.
+## 설치
 
-### 빌드 & 실행
+### 요구 사항
+
+- macOS 14.0 이상 · Apple Silicon (M1 이상)
+- Python 3.11
+- ffmpeg (`brew install ffmpeg`)
+
+### 환경 구성
 
 ```bash
-./build-release.sh                # 빌드 → dist/SilenciApp.app
-open dist/SilenciApp.app          # 실행
+git clone https://github.com/groundroot/FCP_autoedit.git
+cd FCP_autoedit
+
+brew install ffmpeg
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -e .
 ```
 
-### DMG 설치 방법
+AI 모델은 첫 실행 시 자동으로 `~/.cache/huggingface/hub/`에 다운로드됩니다(총 약 2.3 GB). 이후 인터넷 연결 없이 완전 로컬 실행됩니다.
 
-1. [Releases](https://github.com/leeyc09/Silence-Cutter/releases)에서 `Silenci-vX.X.X-macOS.dmg` 다운로드
-2. DMG 열기 → `SilenciApp`을 Applications 폴더에 드래그
-3. **첫 실행:** 앱을 우클릭(또는 Control+클릭) → **열기** → 다이얼로그에서 **열기** 클릭
-   > macOS는 오픈소스 앱에 "확인되지 않은 개발자" 경고를 표시합니다. 한 번만 하면 이후 정상적으로 열립니다.
-4. 첫 실행 시 Python, ffmpeg, AI 모델이 자동 설치됩니다 (~1-2분)
-
-### 첫 실행 자동 설치
-
-<div align="center">
-<img src="docs/setup-flow.svg" width="640" alt="First launch setup flow"/>
-</div>
-
-처음 실행하면 Python 환경을 **자동으로 설치**합니다 (약 45초 소요).
-ASR 모델은 첫 분석 시 자동 다운로드되며, 진행률이 실시간으로 표시됩니다.
-
-### 데이터 저장 경로
-
-| 항목 | 경로 | 크기 |
-|:---:|------|:---:|
-| 🐍 Python venv | `~/Library/Application Support/Silenci/venv/` | ~1.5 GB |
-| 🤖 ASR 모델 캐시 | `~/.cache/huggingface/hub/` | ~1-2 GB |
-
-### 앱 삭제 (완전 제거)
-
-macOS는 `.app`을 휴지통에 버려도 Application Support 데이터는 자동 삭제되지 않습니다.
-
-**방법 1 — 앱 내에서 삭제:**
-
-> 메뉴바 → **Silenci** → **Python 환경 삭제** 클릭
-
-**방법 2 — 수동 삭제:**
-
-```bash
-# Python 가상환경 삭제
-rm -rf ~/Library/Application\ Support/Silenci/
-
-# (선택) ASR 모델 캐시 삭제 — 다른 앱과 공유될 수 있음
-rm -rf ~/.cache/huggingface/hub/models--mlx-community--Qwen3-*
-```
+| 모델 | 크기 | 용도 |
+|------|------|------|
+| `mlx-community/Qwen3-ASR-1.7B-8bit` | ~1.7 GB | 음성 → 텍스트 변환 |
+| `mlx-community/Qwen3-ForcedAligner-0.6B-8bit` | ~600 MB | 단어 수준 타임스탬프 정렬 |
+| Silero VAD v5 | ~2 MB | 음성 구간 감지 |
 
 ---
 
-## ⌨️ CLI 명령어
+## 사용법
+
+### 기본
 
 ```bash
-python -m silence_cutter <command> [options]
-silence-cutter <command> [options]      # pip install -e . 이후
+silence-cutter resub "My Interview.fcpxmld"
 ```
 
-### `cut` — 무음 컷 + 자막
+결과물은 입력 파일 옆에 생성됩니다.
+
+### 인터뷰
 
 ```bash
-silence-cutter cut input.mp4                        # 기본
-silence-cutter cut input.mp4 -o output.fcpxml       # 출력 경로
-silence-cutter cut input.mp4 -l English --itt       # 영어 + iTT
+silence-cutter resub "김시은_인터뷰.fcpxmld" \
+  --min-silence-sec 0.6
 ```
 
-<details>
-<summary><b>📋 전체 옵션</b></summary>
+### 설교 · 강의
+
+```bash
+silence-cutter resub "설교_230910.fcpxmld" \
+  --min-silence-sec 0.8
+```
+
+### 대본 기반 고유명사 교정
+
+```bash
+silence-cutter resub "interview.fcpxmld" \
+  --script terms.md \
+  --min-silence-sec 0.6
+```
+
+`terms.md`는 고유명사·전문 용어가 포함된 마크다운 파일입니다.  
+유사도 85% 이상이고 길이가 같은 토큰만 보수적으로 교정합니다(내용 변경 없음, 표기 교정만).
+
+---
+
+## resub 전체 옵션
 
 | 옵션 | 기본값 | 설명 |
-|:-----|:------:|:-----|
-| `-o, --output` | `<입력>.fcpxml` | 출력 경로 |
-| `-l, --language` | `Korean` | 음성 언어 |
-| `--asr-model` | `Qwen3-ASR-1.7B-8bit` | ASR 모델 |
-| `--aligner-model` | `Qwen3-ForcedAligner-0.6B-8bit` | 정렬 모델 |
-| `--vad-threshold` | `0.5` | VAD 민감도 (0~1) |
-| `--min-speech-ms` | `250` | 최소 음성 구간 (ms) |
-| `--min-silence-ms` | `300` | 최소 무음 구간 (ms) |
-| `--speech-pad-ms` | `100` | 음성 앞뒤 패딩 (ms) |
-| `--font-size` | `42` | 자막 폰트 크기 |
-| `--max-subtitle-chars` | `20` | 한 줄 최대 글자 수 |
-| `--itt` | `false` | iTT 자막 동시 생성 |
+|------|--------|------|
+| `--min-subtitle-chars` | `8` | 자막 한 줄 최소 글자 수 |
+| `--max-subtitle-chars` | `27` | 자막 한 줄 최대 글자 수 |
+| `--gap-bridge-sec` | `0.4` | 이 값 이하의 끊김만 이어 붙임(초). 그보다 긴 침묵은 공백 유지 |
+| `--no-gap-fill` | — | 끊김 메움 비활성화. 순수 단어 타임스탬프 사용 |
+| `--min-silence-sec` | `0.7` | 제거할 최소 무음 길이(초, 결과물 2) |
+| `--silence-pad-ms` | `100` | 음성 구간 앞뒤 패딩(ms, 결과물 2) |
+| `--no-remove-silence` | — | 결과물 2(무음제거) 생성 생략 |
+| `--script` | — | 대본 `.md` 경로 (고유명사 보수 교정) |
+| `--font-size` | `42` | 타이틀 오버레이 폰트 크기 |
+| `--language` | `Korean` | ASR에 전달할 음성 언어 |
+| `--asr-model` | `Qwen3-ASR-1.7B-8bit` | ASR 모델 ID |
+| `--aligner-model` | `Qwen3-ForcedAligner-0.6B-8bit` | 강제 정렬 모델 ID |
 
-</details>
+### 콘텐츠 유형별 권장 `--min-silence-sec`
 
-### `multi` — 멀티 영상 병합
+| 콘텐츠 | 권장값 | 비고 |
+|--------|--------|------|
+| 인터뷰 | `0.6` | 자연스러운 호흡은 유지, 긴 망설임만 제거 |
+| 강의 | `0.4` | 빠른 템포 |
+| 설교 | `0.8` | 의도적 침묵을 전달의 일부로 보존 |
+| 일반 | `0.7` | 기본값 |
+
+---
+
+## 동작 원리 — 파이프라인
+
+```
+1. FCPXML 파싱
+   ├─ spine에서 asset-clip 목록 추출
+   ├─ 에셋 → 파일 시작 타임코드 맵 구성
+   │    file_offset = clip_start_tc − asset_start_tc
+   └─ <media-rep>의 stale <bookmark> 전부 제거
+
+2. 오디오 추출
+   └─ ffmpeg → 16 kHz 모노 WAV
+
+3. 클립별 처리(VAD 구간 단위 병렬):
+   ├─ Silero VAD → 클립 파일 범위 내 음성 구간 감지
+   ├─ 15초 초과 구간 분할(정렬기 안정성)
+   ├─ Qwen3-ASR-1.7B → 텍스트 + 단어 목록
+   ├─ Qwen3-ForcedAligner-0.6B → 절대 단어 타임스탬프
+   └─ _split_subtitle_longform(min=8, max=27) → 자막 카드
+
+4. 결과물 1 구성 — 공백메움
+   ├─ _bridge_short_gaps(≤ 0.4초) → 미세 끊김 이어 붙이기
+   ├─ title(lane 1, Position "0 -440") + caption(lane 2) 삽입
+   └─ 새 UID + 프로젝트명 접미사 "_롱폼자막"
+
+5. 결과물 2 구성 — 무음제거
+   ├─ Silero VAD(min_silence_sec) → 음성 전용 구간 감지
+   ├─ spine 재구성: 압축 클립 순서대로 cursor 누적
+   ├─ 교집합 기반 자막 분배:
+   │    각 음성 클립 [a, b]에 대해:
+   │      [a, b]와 겹치는 모든 자막 chunk 수집
+   │      [a, b]로 클램핑, 첫 조각은 a부터·마지막은 b까지(빈틈 없음)
+   └─ 새 UID + 프로젝트명 접미사 "_무음제거"
+
+6. 두 결과물 자동 검증 → ✓ / ⚠️ 로그 출력
+```
+
+---
+
+## FCPXML 요소 구조
+
+자막 한 장마다 **두 개의 형제 요소**가 부모 `asset-clip` 안에 삽입됩니다:
+
+```xml
+<!-- Lane 1: 화면 표시용 타이틀 오버레이 — param으로 하단 배치 -->
+<title ref="r2" lane="1" offset="34119/1001s" duration="320/1001s"
+       name="감사합니다" start="3600s">
+  <param name="Position"
+         key="9999/999166631/999166633/1/100/101"
+         value="0 -440"/>        <!-- 1080p 기준 iTT 캡션과 동일 위치 -->
+  <text>
+    <text-style ref="rts1">감사합니다</text-style>
+  </text>
+  <text-style-def id="rts1">
+    <text-style font="Helvetica" fontSize="42" fontColor="1 1 1 1"
+                bold="1" shadowColor="0 0 0 0.75" shadowOffset="3 315"
+                alignment="center"/>
+  </text-style-def>
+</title>
+
+<!-- Lane 2: iTT 캡션 (캡션 편집기·SRT/ITT 내보내기에 사용) -->
+<caption lane="2" offset="34119/1001s" duration="320/1001s"
+         role="iTT?captionFormat=ITT.ko" start="3600s">
+  <text placement="bottom">
+    <text-style ref="rcts1">감사합니다</text-style>
+  </text>
+  <text-style-def id="rcts1">
+    <text-style font=".AppleSystemUIFont" fontSize="13" fontFace="Regular"
+                fontColor="1 1 1 1" backgroundColor="0 0 0 1"/>
+  </text-style-def>
+</caption>
+```
+
+**주의 사항:**
+- FCPXML 1.14 DTD 규정상 `<param>`은 `<text>` **앞**에 위치해야 합니다
+- `start="3600s"`는 FCP 타이틀 효과의 내부 앵커값입니다(변경 불가)
+- `offset` = 자막 시작 시점의 카메라 타임코드 (파일 위치 + 에셋 시작 TC)
+- `duration` = `Fraction` 연산으로 프레임 단위 스냅된 자막 길이
+
+---
+
+## 파이널 컷 프로에 임포트하기
+
+### 절차
+
+1. 출력 폴더에서 **평면 `.fcpxml` 파일**을 찾습니다
+2. FCP에서 **파일 → 가져오기 → XML…**
+3. `_롱폼자막_공백메움.fcpxml` 파일 선택
+4. 라이브러리 선택 → **확인**
+
+> **`.fcpxmld` 번들이 아닌 `.fcpxml` 평면 파일을 사용하세요.**  
+> 번들은 파일시스템·Finder 설정에 따라 패키지로 인식되지 않아 임포트에 실패할 수 있습니다.
+
+### 임포트 문제 해결
+
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| 임포트 대화상자에 아무것도 없음 | `.fcpxmld` 번들을 선택함 | `.fcpxml` 평면 파일 사용 |
+| 파일은 임포트됐지만 프로젝트가 안 보임 | 라이브러리에 동일 UID 프로젝트 이미 존재 | 가장 최신 출력 파일 사용(매 실행마다 새 UID 생성) |
+| 임포트 시 FCP 멈춤·충돌 | 소스 FCPXML에 NAS stale `<bookmark>` 존재 | FCP_autoedit가 자동 제거함 |
+| 자막이 잘못된 프레임에 표시 | 소스 FCPXML의 `src` 경로 한글 NFD 인코딩 오류 | `<media-rep>`의 `src` 속성 바이트 직접 교정 필요 |
+
+### DTD 유효성 검사
 
 ```bash
-silence-cutter multi video1.mp4 video2.mp4 -o merged.fcpxml --itt
-```
-
-### `script` — 대본 추출
-
-```bash
-silence-cutter script input.mp4 -t -o script.txt    # 타임코드 포함
-```
-
-### `resub` — 자막 재생성
-
-```bash
-silence-cutter resub edited.fcpxml -o final.fcpxml --itt
-```
-
-### `extract` — FCPXML 자막 추출
-
-```bash
-silence-cutter extract timeline.fcpxml -t -o script.txt
+DTD="/Applications/Final Cut Pro.app/Contents/Frameworks/Interchange.framework/Versions/A/Resources/FCPXMLv1_14.dtd"
+cp "$DTD" /tmp/FCPXMLv1_14.dtd
+python3 -c "
+src = open('output_롱폼자막_공백메움.fcpxml').read()
+out = src.replace('<!DOCTYPE fcpxml>',
+      '<!DOCTYPE fcpxml SYSTEM \"/tmp/FCPXMLv1_14.dtd\">')
+open('/tmp/v.fcpxml', 'w').write(out)
+"
+xmllint --noout --valid /tmp/v.fcpxml && echo "✓ DTD 통과"
 ```
 
 ---
 
-## 📦 출력 포맷
-
-| 포맷 | 확장자 | 용도 | 자막 분할 |
-|:----:|:------:|:-----|:--------:|
-| **FCPXML** | `.fcpxml` | Final Cut Pro (무음 컷 + 타이틀 + iTT 캡션 내장) | ✅ 단어 기반 |
-| **SRT** | `.srt` | 범용 자막 (YouTube, VLC 등) | ✅ 단어 기반 |
-| **iTT** | `.itt` | iTunes Timed Text (FCP 호환 자막) | ✅ 단어 기반 |
-| **TXT** | `.txt` | 대본 텍스트 (선택적 타임코드) | — |
-
-> 모든 자막 포맷이 **단어 타임스탬프 기반으로 정확하게 분할**됩니다.
-> FCPXML 내보내기 시 **타이틀 텍스트 오버레이** (lane 1)와 **iTT 인라인 캡션** (lane 2)이 함께 포함됩니다.
-
-### Final Cut Pro에서 열기
-
-> **File** → **Import** → **XML...** → `.fcpxml` 선택
->
-> 무음이 제거된 타임라인과 자막이 자동으로 로드됩니다.
-
-<div align="center">
-<img src="docs/fcp-import.jpg" width="720" alt="Final Cut Pro에서 FCPXML + iTT 자막 임포트"/>
-
-*FCPXML 타임라인 + iTT 자막이 Final Cut Pro에 로드된 모습*
-</div>
-
----
-
-## 📥 설치
-
-### 시스템 요구 사항
-
-| 항목 | 요구 사항 |
-|:----:|:----------|
-| **OS** | macOS 14.0+ (Apple Silicon) |
-| **디스크** | Python venv + ASR 모델 약 2~4GB |
-
-> **Python, ffmpeg, Homebrew**는 첫 실행 시 **자동 설치**됩니다. 별도 수동 설치가 필요 없습니다.
-
-### macOS 앱 (권장)
-
-[Releases](https://github.com/leeyc09/Silence-Cutter/releases)에서 다운로드 → 위의 [DMG 설치 방법](#dmg-설치-방법) 참고
-
-### CLI (스크립트/자동화용)
-
-```bash
-brew install ffmpeg
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-silence-cutter cut input.mp4
-```
-
-### 의존성
-
-| 패키지 | 용도 |
-|:-------|:-----|
-| `mlx-audio` | Qwen3-ASR / ForcedAligner (MLX) |
-| `silero-vad` | 음성 활동 감지 |
-| `torch` | Silero VAD 런타임 |
-| `soundfile` | WAV I/O |
-| `numpy<2` | 수치 연산 |
-| `soynlp` | 한국어 토크나이제이션 (ForcedAligner) |
-
----
-
-## 🔧 기술 세부 사항
-
-### ASR 모델
-
-| 모델 | 크기 | 특징 |
-|:-----|:----:|:-----|
-| `mlx-community/Qwen3-ASR-0.6B-8bit` | ~600MB | 가벼운 추론 |
-| `mlx-community/Qwen3-ASR-1.7B-8bit` | ~1.7GB | 높은 정확도 |
-| `mlx-community/Qwen3-ForcedAligner-0.6B-8bit` | ~600MB | 단어 타임스탬프 |
-
-> 모든 모델은 MLX 8-bit 양자화. Apple Silicon Neural Engine에서 효율적으로 동작합니다.
-> 첫 실행 시 Hugging Face에서 자동 다운로드 → `~/.cache/huggingface/hub/`에 캐시.
-> 앱에서 다운로드 진행률이 **바이트 단위**로 실시간 표시됩니다.
-
-### 자막 분할 알고리즘
+## 프로젝트 구조
 
 ```
-1순위  구두점 또는 한국어 종결어미에서 분할 (최소 6글자 이상)
-       종결어미: 요, 다, 까, 죠, 고, 서, 며, 면, 습니다, 합니다 …
-       구두점: . ! ? 。，
-
-2순위  max_subtitle_chars 초과 시 강제 분할
-       - 다음 단어가 3자 이하면 포함 (조사 분리 방지)
-       - max_chars + 8 상한 초과 시 무조건 분할
-
-3순위  분할 후 겹치는 타임스탬프 자동 보정
-```
-
-### 세그먼트 경계 후처리
-
-ForcedAligner가 형태소 단위로 단어를 분리하기 때문에, 세그먼트 경계에서 조사가 분리될 수 있습니다.
-`merge_orphan_josa`가 이를 자동 보정합니다:
-
-```
-Before:  "맛집" | "을 검색을..."
-After:   "맛집 을" | "검색을..."
-```
-
-### 프레임레이트
-
-`Fraction` 기반 정밀 계산으로 부동소수점 오차를 방지합니다.
-
-| fps | FCP 코드 | 프레임 듀레이션 |
-|:---:|:--------:|:--------------:|
-| 23.976 | 2398 | 1001/24000s |
-| 24 | 24 | 100/2400s |
-| 25 | 25 | 100/2500s |
-| 29.97 | 2997 | 1001/30000s |
-| 30 | 30 | 100/3000s |
-| 59.94 | 5994 | 1001/60000s |
-| 60 | 60 | 100/6000s |
-| 120 | 120 | 100/12000s |
-
----
-
-## 🗂️ 프로젝트 구조
-
-```
-Qwen3-TTS-Mac/
-├── silence_cutter/                  # Python 패키지
-│   ├── server.py                    # JSON-RPC 서버 (2-pass ASR)
-│   ├── vad.py                       # Silero VAD + 묵음 기반 분할
-│   ├── transcribe.py                # Qwen3-ASR + ForcedAligner + 조사 병합
-│   ├── fcpxml.py                    # FCPXML 생성 + 자막 분할
-│   ├── srt.py / itt.py              # SRT, iTT 자막
-│   ├── pipeline.py                  # CLI 파이프라인
-│   └── ...
-├── SilenciApp/                # Swift macOS 앱
-│   ├── Package.swift
-│   └── Sources/
-│       ├── App.swift                # 앱 진입점 + 메뉴 (환경 삭제)
-│       ├── ContentView.swift        # 메인 레이아웃 + 분석 팝업 연결
-│       ├── Models/
-│       │   ├── AnalysisService.swift    # 분석 실행/취소 + Python bridge 관리
-│       │   ├── AnalysisSettings.swift   # 설정 모델 (UserDefaults 저장)
-│       │   ├── Segment.swift / Word.swift
-│       │   └── ...
-│       ├── Services/
-│       │   ├── PythonBridge.swift        # JSON-RPC 통신 + PATH 설정
-│       │   ├── PythonEnvironment.swift   # venv 자동 설치/삭제/버전 관리
-│       │   └── ExportService.swift       # FCPXML/SRT/iTT 생성 (단어 기반 분할)
-│       └── Views/
-│           ├── AnalyzeDialogView.swift   # 분석 전 설정 팝업
-│           ├── AnalysisProgressView.swift # 진행률 + 모델 다운로드 + 취소
-│           ├── ClipCardView.swift        # 클립 카드 (영상편집 + 자막수정)
-│           ├── WordFlowView.swift        # 단어 단위 편집 UI
-│           ├── RetranscribeSheetView.swift # FCPXML 자막 재생성 설정 + 진행률
-│           ├── SettingsView.swift        # 설정 시트 (앱 언어 포함)
-│           └── ...
-├── build-release.sh                 # 릴리스 빌드 → dist/SilenciApp.app
-├── setup_mac.sh                     # Python 환경 자동 설치
-└── docs/                            # 다이어그램, 스크린샷
+silence_cutter/
+├── retranscribe.py      ← 롱폼 파이프라인 핵심 (resub 명령)
+│   ├── _split_subtitle_longform()   등급제 자막 분할
+│   ├── _bridge_short_gaps()         미세 끊김 이어 붙이기
+│   ├── _add_subtitle_elements()     title + caption 요소 작성
+│   ├── _build_silence_removed()     결과물 2 (무음제거) 구성
+│   └── _verify_fcpxml()             생성 후 검증
+├── transcribe.py        ASR + ForcedAligner + 조사 경계 병합
+├── vad.py               Silero VAD, 구간 분할
+├── fcpxml.py            FCPXML 헬퍼, 프레임 스냅, cut 명령 분할
+├── __main__.py          CLI 진입점 (argparse)
+└── itt.py               iTT 자막 내보내기
 ```
 
 ---
 
-## 🛠️ 문제 해결
-
-<details>
-<summary><b>ffmpeg/ffprobe를 찾을 수 없습니다</b></summary>
-
-```bash
-brew install ffmpeg
-```
-
-앱에서는 `/opt/homebrew/bin`을 자동으로 PATH에 추가합니다.
-</details>
-
-<details>
-<summary><b>모델 다운로드가 느립니다</b></summary>
-
-첫 분석 시 Hugging Face Hub에서 ASR 모델을 자동 다운로드합니다.
-바이트 단위 진행률이 앱에 표시되며, 다운로드 후 `~/.cache/huggingface/hub/`에 캐시되어 이후 바로 로드됩니다.
-</details>
-
-<details>
-<summary><b>VAD가 너무 민감하거나 둔합니다</b></summary>
-
-앱: 분석 팝업에서 **VAD 감도** 슬라이더 조절
-
-CLI:
-
-| 조절 방향 | 파라미터 |
-|:---------|:---------|
-| 민감하게 (작은 소리도 인식) | `--vad-threshold 0.3` |
-| 둔하게 (확실한 음성만) | `--vad-threshold 0.7` |
-| 짧은 무음도 제거 | `--min-silence-ms 150` |
-| 긴 무음만 제거 | `--min-silence-ms 500` |
-</details>
-
-<details>
-<summary><b>자막이 너무 잘게/크게 나뉩니다</b></summary>
-
-앱: 분석 팝업에서 **줄 최대** 글자 수 조절 (기본 20)
-
-CLI: `--max-subtitle-chars 30` 으로 줄 길이 증가
-</details>
-
-<details>
-<summary><b>단어 중간에서 자막이 잘립니다</b></summary>
-
-2-Pass ASR 방식으로 단어 중간 잘림이 발생하지 않습니다.
-만약 발생한다면 `--max-segment-seconds` 값을 늘려보세요 (기본 8초 → 15초).
-</details>
-
----
-
-## 🧑‍💻 개발
-
-```bash
-pip install -e ".[dev]"          # 개발 의존성 설치
-pytest                           # 테스트
-black --line-length 100 .        # 포맷팅
-ruff check silence_cutter/       # 린트
-```
-
----
-
-## ⭐ 이 프로젝트가 유용하셨나요?
-
-**스타** ⭐ 를 눌러주시면 더 많은 분들이 이 프로젝트를 발견할 수 있습니다.
-
-[![Star History Chart](https://api.star-history.com/svg?repos=leeyc09/Silence-Cutter&type=Date)](https://star-history.com/#leeyc09/Silence-Cutter&Date)
-
----
-
-## 📄 License
+## 라이선스
 
 [Apache License 2.0](LICENSE)
+
+원본 프로젝트: [Silenci / Silence-Cutter](https://github.com/leeyc09/Silence-Cutter) by leeyc09  
+롱폼 자막 워크플로우, 등급제 분할, 무음제거 출력, FCPXML 안전성 수정: [groundroot](https://github.com/groundroot)

@@ -1,656 +1,348 @@
 <div align="center">
 
-<img src="docs/logo.svg" width="200" alt="Silenci logo"/>
+# FCP_autoedit
 
-# 🎬 Silenci
+**AI-powered longform subtitle generator for Final Cut Pro**
 
-**Automatically remove silence from videos and generate perfectly synced subtitles**
-
-Drop a video → AI detects & cuts silence → Export to Final Cut Pro with word-level subtitles
+Drop an exported FCPXML → AI transcribes & aligns speech → Get two ready-to-import subtitle files
 
 [![macOS](https://img.shields.io/badge/macOS-14.0+-000000?style=flat-square&logo=apple&logoColor=white)](https://www.apple.com/macos/)
 [![Apple Silicon](https://img.shields.io/badge/Apple_Silicon-Optimized-FF6B35?style=flat-square&logo=apple&logoColor=white)](#)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=flat-square)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/leeyc09/Silence-Cutter?style=flat-square&color=yellow)](https://github.com/leeyc09/Silenci/stargazers)
 
-[한국어 문서](README.ko.md)
-
-<br/>
-
-<img src="docs/waveform.svg" width="680" alt="Waveform before and after silence removal"/>
+[한국어 문서 →](README.ko.md)
 
 </div>
 
 ---
 
-## Why Silenci?
+## What is FCP_autoedit?
 
-Most silence-removal tools split audio **by time**, which cuts words in half.
-Silenci uses a **2-Pass ASR** approach — first transcribe, then split only at **word boundaries**.
-No mid-word cuts. Ever.
+FCP_autoedit is a command-line tool that takes a Final Cut Pro project (`.fcpxmld`) exported **without subtitles** and automatically generates **two subtitle-embedded FCPXML files** ready to import back into FCP.
 
-| | Other tools | Silenci |
-|:--|:-----------|:---------------|
-| Split method | Time-based → words get chopped | Word-boundary → clean cuts |
-| Subtitles | Separate tool needed | Built-in, word-level synced |
-| Runs on | Cloud / GPU server | 100% local on your Mac |
-| Cost | Subscription / API fees | Free & open source |
-| Privacy | Upload to cloud | Offline — nothing leaves your Mac |
-
----
-
-## ✨ Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🔇 Smart Silence Removal
-- Silero VAD for precise speech detection
-- Automatic silence removal → compact timeline
-- FCPXML output (import directly to Final Cut Pro)
-- Multi-video merge support
-
-</td>
-<td width="50%">
-
-### 🗣️ AI Speech Recognition
-- **Qwen3-ASR** — high-quality speech-to-text (0.6B / 1.7B)
-- **Qwen3-ForcedAligner** — word-level timestamps
-- Multi-language: Korean · English · Japanese · Chinese
-- MLX 8-bit quantized — Apple Silicon optimized
-
-</td>
-</tr>
-<tr>
-<td>
-
-### ✂️ Word-Level Subtitle Splitting
-- Split at sentence endings & punctuation
-- Timestamps synced to exact word boundaries
-- FCPXML inline titles + iTT captions, SRT formats
-- Customizable font size & max characters per line
-
-</td>
-<td>
-
-### 🔄 FCPXML Retranscribe
-- Import edited FCPXML from Final Cut Pro
-- Re-transcribe subtitles with updated clip structure
-- Handles reordered & overlapping clips correctly
-- Language & model selection per retranscribe run
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 📱 Two Interfaces
-- **macOS native app** — drag & drop, real-time preview
-- **CLI** — scriptable, automation-friendly
-
-</td>
-<td>
-
-### 🌐 Localization
-- App UI: Korean · English · Japanese · Chinese
-- In-app language selector (independent of system locale)
-- Speech recognition for 4+ languages
-
-</td>
-</tr>
-</table>
-
----
-
-## 🔬 How It Works — 2-Pass ASR Pipeline
-
-<div align="center">
-<img src="docs/pipeline.svg" width="800" alt="Processing pipeline diagram"/>
-</div>
-
-Most silence-removal tools split audio **by fixed time windows** before running ASR. This causes words to be cut in half at chunk boundaries. Silenci solves this with a **2-pass approach**:
+It is purpose-built for **longform content** — interviews, sermons, lectures — where subtitles must be readable, meaning-unit aware, and precisely timed to actual speech.
 
 ```
-Pass 1:  VAD → chunk by silence gaps (≤30s) → ASR + ForcedAligner → word-level timestamps
-Pass 2:  Split only at word end_time boundaries → never cuts mid-word
-```
+Input:  interview_edit.fcpxmld        ← Your FCP project, no subtitles
 
-#### Detailed Pipeline
-
-| Step | Component | Input | Output |
-|:----:|:----------|:------|:-------|
-| 1 | **ffprobe** | Video file | fps, resolution, duration |
-| 2 | **ffmpeg** | Video file | 16kHz mono WAV |
-| 3 | **Silero VAD** | WAV audio | Speech segments `[{start, end}, ...]` |
-| 4 | **Split** | Speech segments | ≤30s chunks (split at silence gaps, not mid-speech) |
-| 5 | **Qwen3-ASR** | Audio chunk | Transcribed text |
-| 6 | **Qwen3-ForcedAligner** | Audio + text | Word-level `[{text, start, end}, ...]` |
-| 7 | **Word merge** | All words | Full word list with absolute timestamps |
-| 8 | **Segment split** | Word list | Segments split at `end_time` boundaries |
-| 9 | **Subtitle split** | Segments | Subtitle chunks by punctuation/endings |
-
-When splitting at step 8, the algorithm prefers the **largest silence gap** between words, producing natural sentence-like segments.
-
----
-
-## 🏗️ Architecture
-
-<div align="center">
-<img src="docs/architecture.svg" width="800" alt="Architecture diagram"/>
-</div>
-
-### Swift ↔ Python Bridge
-
-The app uses a **dual-process architecture**: a Swift frontend communicates with a Python subprocess via **JSON-RPC 2.0** over stdin/stdout pipes.
-
-```
-┌──────────────────────┐          stdin (JSON)          ┌──────────────────────┐
-│   Swift macOS App    │  ──── {"method":"analyze"} ──→ │  Python Subprocess   │
-│                      │                                │                      │
-│  • SwiftUI Views     │  ←── {"result": segments} ──── │  • silence_cutter/   │
-│  • PythonBridge      │                                │    server.py         │
-│  • ExportService     │  ←── {"method":"progress"} ──  │  • Silero VAD        │
-│  • PythonEnvironment │        (notifications)         │  • Qwen3-ASR (MLX)   │
-└──────────────────────┘          stdout (JSON)         └──────────────────────┘
-```
-
-**Why this architecture?**
-- **Isolation**: Python ML stack (PyTorch, MLX) runs in a separate process — crashes don't take down the UI
-- **Streaming progress**: JSON-RPC notifications push real-time progress (VAD %, ASR chunk N/M, model download bytes)
-- **No FFI overhead**: No ctypes/cffi bindings needed — just line-delimited JSON
-- **Cancelable**: Swift can kill the Python process at any time for instant cancellation
-
-#### JSON-RPC Protocol
-
-```jsonc
-// Request (Swift → Python)
-{"id": 1, "method": "analyze", "params": {"video_path": "/path/to/video.mp4", "language": "English"}}
-
-// Progress notification (Python → Swift, no id)
-{"method": "progress", "params": {"phase": "analyze", "percent": 45, "detail": "Transcribing (12/26)"}}
-
-// Model download notification
-{"method": "progress", "params": {"phase": "model_download", "percent": 67, "detail": "1.2 GB / 1.7 GB"}}
-
-// Response (Python → Swift)
-{"id": 1, "result": {"segments": [...], "video_info": {"fps": 23.976, "width": 1920, "height": 1080}}}
-```
-
-### Auto-Install System
-
-On first launch, `PythonEnvironment.swift` handles a fully automated setup chain:
-
-```
-App launch
-  → Check Homebrew     (not found? → install via official script)
-  → Check Python3      (not found? → brew install python@3)
-  → Check ffmpeg       (not found? → brew install ffmpeg)
-  → Create venv        (~/Library/Application Support/Silenci/venv/)
-  → pip install        (torch, mlx-audio, silero-vad, soundfile, numpy, soynlp)
-  → Write version stamp (.sc-version)
-  → Ready ✅
-```
-
-Subsequent launches skip installation if the version stamp matches. Bumping `envVersion` in code forces a clean reinstall.
-
----
-
-## 🖥️ macOS App
-
-Native SwiftUI app — load a video, configure settings, analyze, edit, and export in one window.
-
-<div align="center">
-
-### 📋 Analysis Settings
-<img src="docs/app-settings.jpg" width="720" alt="Analysis settings dialog"/>
-
-<br/>
-
-### 📊 Real-time Progress
-<img src="docs/app-progress.jpg" width="720" alt="Analysis progress view"/>
-
-<br/>
-
-### ✂️ Word-level Editing
-<img src="docs/app-main.jpg" width="720" alt="Main editing screen with word-level editing"/>
-
-</div>
-
-### App Features
-
-| Feature | Description |
-|:--------|:------------|
-| 🎬 **Load video** | Drag & drop or File → Open |
-| ⚙️ **Analysis settings** | Auto-popup on load — language, model, VAD sensitivity |
-| 📊 **Real-time progress** | Separate progress for analysis & model download |
-| ⛔ **Cancel analysis** | Stop anytime with cancel button |
-| ✂️ **Word-level editing** | Delete/restore words, split/merge clips |
-| 🔍 **Find & Replace** | Cmd+F to batch-edit subtitle text |
-| 🔄 **Import FCPXML** | Re-transcribe edited FCPXML with language & model selection |
-| 🌐 **App Language** | Switch UI language in Settings (Korean/English/Japanese/Chinese) |
-| 📤 **Export** | FCPXML (with inline iTT captions), SRT, iTT — all word-boundary split |
-
-### Analysis Settings
-
-| Category | Setting | Default | Description |
-|:--------:|:--------|:-------:|:------------|
-| Speech | Language | Korean | Korean / English / Japanese / Chinese |
-| | ASR Model | 0.6B | 0.6B (fast) / 1.7B (accurate) |
-| Silence | VAD Sensitivity | 0.50 | 0.1–0.9 (lower = more sensitive) |
-| | Min Silence | 200ms | Shorter silences are ignored |
-| | Padding | 100ms | Buffer around speech segments |
-| Subtitle | Max Clip Length | 8s | 3–20s slider |
-| | Max Chars/Line | 20 | Subtitle line break threshold |
-| | Font Size | 42pt | FCPXML subtitle font |
-
-> Settings are persisted via UserDefaults across app restarts.
-
-### Build & Run
-
-```bash
-./build-release.sh                # Build → dist/SilenciApp.app
-open dist/SilenciApp.app          # Launch
-```
-
-### Install from DMG
-
-1. Download `Silenci-vX.X.X-macOS.dmg` from [Releases](https://github.com/leeyc09/Silence-Cutter/releases)
-2. Open DMG → drag `SilenciApp` to Applications
-3. **First launch:** Right-click (or Control+click) the app → **Open** → click **Open** in the dialog
-   > macOS shows "unidentified developer" warning for open-source apps. This is a one-time step — after this, the app opens normally.
-4. The app auto-installs Python, ffmpeg, and AI models on first launch (~1-2 min)
-
-### First Launch — Auto Setup
-
-<div align="center">
-<img src="docs/setup-flow.svg" width="640" alt="First launch setup flow"/>
-</div>
-
-On first launch, the app **automatically creates a Python venv** and installs dependencies (~45 seconds).
-ASR models are downloaded on first analysis with byte-level progress tracking.
-
-| Item | Path | Size |
-|:----:|------|:----:|
-| 🐍 Python venv | `~/Library/Application Support/Silenci/venv/` | ~1.5 GB |
-| 🤖 ASR model cache | `~/.cache/huggingface/hub/` | ~1-2 GB |
-
-### Complete Uninstall
-
-**Option 1 — From the app:**
-> Menu bar → **Silenci** → **Python 환경 삭제**
-
-**Option 2 — Manual:**
-```bash
-rm -rf ~/Library/Application\ Support/Silenci/
-rm -rf ~/.cache/huggingface/hub/models--mlx-community--Qwen3-*
+Output: interview_edit_롱폼자막_공백메움.fcpxmld          ← Original edit + subtitles
+        interview_edit_롱폼자막_공백메움_무음제거.fcpxmld  ← Silence-removed + subtitles
 ```
 
 ---
 
-## ⌨️ CLI Usage
+## Key Features
 
-```bash
-python -m silence_cutter <command> [options]
-silence-cutter <command> [options]      # after pip install -e .
-```
+### Two outputs from one run
 
-### `cut` — Silence removal + subtitles
-
-```bash
-silence-cutter cut input.mp4                        # basic
-silence-cutter cut input.mp4 -o output.fcpxml       # custom output
-silence-cutter cut input.mp4 -l English --itt       # English + iTT
-```
-
-<details>
-<summary><b>📋 All options</b></summary>
-
-| Option | Default | Description |
-|:-------|:-------:|:------------|
-| `-o, --output` | `<input>.fcpxml` | Output path |
-| `-l, --language` | `Korean` | Speech language |
-| `--asr-model` | `Qwen3-ASR-1.7B-8bit` | ASR model |
-| `--aligner-model` | `Qwen3-ForcedAligner-0.6B-8bit` | Alignment model |
-| `--vad-threshold` | `0.5` | VAD sensitivity (0–1) |
-| `--min-speech-ms` | `250` | Min speech duration (ms) |
-| `--min-silence-ms` | `300` | Min silence duration (ms) |
-| `--speech-pad-ms` | `100` | Speech padding (ms) |
-| `--font-size` | `42` | Subtitle font size |
-| `--max-subtitle-chars` | `20` | Max chars per subtitle line |
-| `--itt` | `false` | Also generate iTT subtitles |
-
-</details>
-
-### `multi` — Multi-video merge
-
-```bash
-silence-cutter multi video1.mp4 video2.mp4 -o merged.fcpxml --itt
-```
-
-### `script` — Script extraction
-
-```bash
-silence-cutter script input.mp4 -t -o script.txt    # with timecodes
-```
-
-### `resub` — Regenerate subtitles
-
-```bash
-silence-cutter resub edited.fcpxml -o final.fcpxml --itt
-```
-
-### `extract` — Extract FCPXML subtitles
-
-```bash
-silence-cutter extract timeline.fcpxml -t -o script.txt
-```
+| Output | Description |
+|--------|-------------|
+| **Gap-filled** (`공백메움`) | Original cut structure preserved. Subtitles follow actual speech timing. Pauses between sentences are intentional — not forced to fill. |
+| **Silence-removed** (`무음제거`) | Silence beyond the threshold is cut. Timeline is compressed. Subtitles redistributed via intersection mapping, covering every frame with no gaps. |
 
 ---
 
-## 📦 Output Formats
+### Grade-based subtitle splitting
 
-| Format | Extension | Use Case | Subtitle Splitting |
-|:------:|:---------:|:---------|:------------------:|
-| **FCPXML** | `.fcpxml` | Final Cut Pro (silence cuts + inline titles + iTT captions) | ✅ Word-based |
-| **SRT** | `.srt` | Universal subtitles (YouTube, VLC, etc.) | ✅ Word-based |
-| **iTT** | `.itt` | iTunes Timed Text (FCP compatible) | ✅ Word-based |
-| **TXT** | `.txt` | Plain text script (optional timecodes) | — |
+Subtitles split at **meaning-unit boundaries**, not by character count alone.  
+Three grades of break points are evaluated in priority order:
 
-> All subtitle formats use **word-level timestamps for precise splitting**.
-> FCPXML exports include both **title text overlays** (lane 1) and **iTT inline captions** (lane 2) — FCP shows both automatically.
+| Grade | Triggers | Behavior |
+|-------|----------|----------|
+| **Grade 3** — sentence endings | `습니다` `합니다` `에요` `네요` `는데요` `거든요` `.` `!` `?` | **Immediate split** as soon as `min_chars` (default 8) is reached |
+| **Grade 2** — connective endings | `고` `서` `해서` `는데` `지만` `면서` `,` | Used on overflow; viewer naturally reads "…continued" |
+| **Grade 1** — particles | `을` `를` `은` `는` `에서` `로` `까지` | Last resort only; particle-only words (`은`, `는`, …) never split |
 
-### Import to Final Cut Pro
+**Overflow handling:** When a subtitle exceeds `max_chars` (default 27), the algorithm looks back through all recorded break points, selects the **highest-grade boundary whose head fits within `max_chars`**, emits that head as a card, then **rolls `i` back to the first tail word** — allowing the tail to be processed through the normal loop (including Grade 3 immediate splits on tail-side sentence endings).
 
-> **File** → **Import** → **XML...** → select the `.fcpxml` file
+**Key bug this solves:**
+> Speech: `"…나아가야겠다는 생각을 하였습니다 감사합니다"`
 >
-> The silence-removed timeline with embedded subtitles loads automatically.
-
-<div align="center">
-<img src="docs/fcp-import.jpg" width="720" alt="FCPXML and iTT subtitles imported in Final Cut Pro"/>
-
-*FCPXML timeline + iTT subtitles in Final Cut Pro*
-</div>
+> ❌ Before: `하였습니다` only recorded `last_break`. Since `감사합니다` was `is_last`, both words merged → `"하였습니다 감사합니다"` displayed during `감사합니다` audio.
+>
+> ✅ After: `하였습니다` triggers Grade 3 immediate split → `"생각을 하였습니다"` + `"감사합니다"` each become their own card.
 
 ---
 
-## 📥 Installation
+### Speech-timed subtitles — no redistribution
+
+Subtitle start/end times are taken **directly from Qwen3-ForcedAligner word timestamps**.  
+Character-count-based time redistribution is never used.
+
+- Pauses ≤ `--gap-bridge-sec` (default 0.4 s) are bridged for readability
+- Genuine silences remain as gaps — subtitle timing matches breath
+
+---
+
+### Automatic post-generation verification
+
+Both files are verified immediately after generation:
+
+| Check | Output 1 | Output 2 |
+|-------|----------|----------|
+| Caption count > 0 | ✓ required | ✓ required |
+| No overlapping captions | ✓ | ✓ |
+| No multi-line captions | ✓ | ✓ |
+| No empty caption text | ✓ | ✓ |
+| No clip-boundary violations | ✓ | ✓ |
+| Gaps between captions | ✅ Normal (real silence) | ⚠️ Error — must be contiguous |
+
+Sample log:
+
+```
+[검증:결과물1 공백메움] ✓ caption 47개, 겹침/줄바꿈/경계이탈 없음
+                         (자막 4.3s~312.6s, 발화 사이 침묵 11곳(정상))
+[silence] 음성 구간 8개 (min_silence=0.6s, pad=100ms)
+[검증:결과물2 무음제거] ✓ caption 49개, 겹침/줄바꿈/경계이탈 없음
+                         (자막 0.0s~271.4s)
+```
+
+---
+
+### FCPXML-safe output
+
+| Concern | Solution |
+|---------|----------|
+| Same project UID → FCP silently skips import | Fresh UUID generated on every run |
+| Stale NAS/SMB bookmark → FCP hang or crash | All `<bookmark>` children of `<media-rep>` stripped automatically |
+| Bundle import unreliable in some FCP versions | Both `.fcpxmld` (bundle) **and** `.fcpxml` (flat) are written; use flat for import |
+| Camera timecode ≠ file offset → wrong audio seek | `file_pos = clip_start_tc − asset_start_tc` computed with Python `Fraction` |
+
+---
+
+## Installation
 
 ### Requirements
 
-| Item | Requirement |
-|:----:|:------------|
-| **OS** | macOS 14.0+ (Apple Silicon) |
-| **Disk** | ~2-4 GB for Python venv + ASR models |
+- macOS 14.0+ · Apple Silicon (M1 or later)
+- Python 3.11
+- ffmpeg (`brew install ffmpeg`)
 
-> **Python, ffmpeg, Homebrew** are all **auto-installed** on first launch if not present. No manual setup needed.
-
-### macOS App (Recommended)
-
-Download from [Releases](https://github.com/leeyc09/Silence-Cutter/releases) → see [Install from DMG](#install-from-dmg) above.
-
-### CLI (for scripting/automation)
+### Setup
 
 ```bash
+git clone https://github.com/groundroot/FCP_autoedit.git
+cd FCP_autoedit
+
 brew install ffmpeg
-python3 -m venv .venv && source .venv/bin/activate
+python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e .
-silence-cutter cut input.mp4
 ```
 
-### Dependencies
+AI models download automatically on first run into `~/.cache/huggingface/hub/` (~2.3 GB total). No API key or internet connection required after download.
 
-| Package | Purpose |
-|:--------|:--------|
-| `mlx-audio` | Qwen3-ASR / ForcedAligner (MLX backend) |
-| `silero-vad` | Voice Activity Detection |
-| `torch` | Silero VAD runtime |
-| `soundfile` | WAV I/O |
-| `numpy<2` | Numerical computation |
-| `soynlp` | Korean tokenization (ForcedAligner) |
+| Model | Size | Purpose |
+|-------|------|---------|
+| `mlx-community/Qwen3-ASR-1.7B-8bit` | ~1.7 GB | Speech-to-text |
+| `mlx-community/Qwen3-ForcedAligner-0.6B-8bit` | ~600 MB | Word-level alignment |
+| Silero VAD v5 | ~2 MB | Voice activity detection |
 
 ---
 
-## 🔧 Technical Details
+## Usage
 
-### AI Models — Deep Dive
-
-Silenci uses three AI models from the [Qwen3 family](https://huggingface.co/collections/Qwen/qwen3-audio-6839ceac12e7e8088ce0114b), all running **locally** on Apple Silicon via the [MLX](https://github.com/ml-explore/mlx) framework.
-
-#### Qwen3-ASR (Speech-to-Text)
-
-| | 0.6B | 1.7B |
-|:--|:-----|:-----|
-| **Model** | `mlx-community/Qwen3-ASR-0.6B-8bit` | `mlx-community/Qwen3-ASR-1.7B-8bit` |
-| **Parameters** | 600M | 1.7B |
-| **Quantization** | 8-bit (MLX) | 8-bit (MLX) |
-| **Disk size** | ~600 MB | ~1.7 GB |
-| **Use case** | Fast drafts, short videos | Production quality, long-form |
-| **Languages** | Korean, English, Japanese, Chinese, and 10+ more |
-
-Qwen3-ASR is an encoder-decoder transformer trained on large-scale multilingual speech data. The MLX 8-bit quantized versions run efficiently on Apple Silicon's Neural Engine and GPU, achieving near-real-time transcription without requiring a cloud API.
-
-**How it's used in Silenci:**
-1. Audio is extracted from video via ffmpeg (16kHz mono WAV)
-2. VAD segments are chunked into ≤30s pieces
-3. Each chunk is fed to `asr.generate(audio, language=...)` → returns transcribed text
-
-#### Qwen3-ForcedAligner (Word Timestamps)
-
-| | |
-|:--|:--|
-| **Model** | `mlx-community/Qwen3-ForcedAligner-0.6B-8bit` |
-| **Parameters** | 600M |
-| **Quantization** | 8-bit (MLX) |
-| **Disk size** | ~600 MB |
-| **Purpose** | Align transcribed text to audio → word-level `{text, start, end}` |
-
-ForcedAligner takes the ASR output text and the original audio, then aligns each word to its exact position in the audio stream. This is what enables **word-boundary splitting** — the core innovation of Silenci.
-
-**How it's used:**
-1. ASR produces text for a chunk: `"Through being someone mobile"`
-2. ForcedAligner receives audio + text → outputs:
-   ```
-   [{text: "Through", start: 0.12, end: 0.45},
-    {text: "being",   start: 0.47, end: 0.71},
-    {text: "someone", start: 0.73, end: 1.15},
-    {text: "mobile",  start: 1.18, end: 1.52}]
-   ```
-3. Segment splitting only happens at word `end` times (never mid-word)
-
-**Coverage validation:** If ForcedAligner output covers <75% of the ASR text, the result is discarded and the segment falls back to chunk-level timing (safety net for edge cases).
-
-#### Silero VAD (Voice Activity Detection)
-
-| | |
-|:--|:--|
-| **Model** | Silero VAD v5 |
-| **Framework** | PyTorch |
-| **Size** | ~2 MB |
-| **Speed** | Processes 1 hour of audio in ~3 seconds |
-| **Purpose** | Detect speech vs. silence boundaries |
-
-Silero VAD is a lightweight neural network that classifies audio frames as speech or non-speech. It outputs speech timestamps used to:
-- Remove silence (the primary feature)
-- Define ASR chunk boundaries (speech segments → 30s chunks)
-- Calculate energy for optimal split points
-
-**Configurable parameters:**
-| Parameter | Default | Effect |
-|:----------|:-------:|:-------|
-| `threshold` | 0.50 | Speech detection sensitivity (0.1=sensitive, 0.9=strict) |
-| `min_speech_ms` | 250 | Minimum speech duration to keep |
-| `min_silence_ms` | 200 | Minimum silence to detect as gap |
-| `speech_pad_ms` | 100 | Padding added around speech segments |
-
-### Subtitle Splitting Algorithm
-
-The subtitle splitting engine runs both in Python (server-side) and Swift (export-side) with identical logic:
-
-```
-Priority 1  Split at punctuation or sentence endings (min 6 chars accumulated)
-            Korean endings: 요, 다, 까, 죠, 고, 서, 며, 면, 습니다, 합니다 …
-            Punctuation: . ! ? 。，
-
-Priority 2  Force-split when exceeding max_subtitle_chars
-            - Include next word if ≤3 chars (prevents Korean particle separation)
-            - Hard limit at max_chars + 8 (prevents infinite accumulation)
-
-Priority 3  Auto-correct overlapping timestamps after splitting
-```
-
-**Korean-specific post-processing:**
-`merge_orphan_josa()` handles cases where ForcedAligner separates Korean particles (조사) at segment boundaries:
-```
-Before:  "맛집" | "을 검색을..."     ← "을" orphaned from its noun
-After:   "맛집을" | "검색을..."      ← particle merged back
-```
-
-### Frame Rate Handling
-
-FCPXML requires frame-exact timing. Silenci uses Python `Fraction` arithmetic to avoid floating-point drift:
-
-| fps | FCP Code | Frame Duration | Notes |
-|:---:|:--------:|:--------------:|:------|
-| 23.976 | 2398 | 1001/24000s | Drop-frame NTSC film |
-| 24 | 24 | 100/2400s | Cinema |
-| 25 | 25 | 100/2500s | PAL |
-| 29.97 | 2997 | 1001/30000s | Drop-frame NTSC |
-| 30 | 30 | 100/3000s | Non-drop NTSC |
-| 59.94 | 5994 | 1001/60000s | High frame rate |
-| 60 | 60 | 100/6000s | Gaming/action |
-| 120 | 120 | 100/12000s | iPhone slo-mo |
-
-All time calculations use `Fraction(numerator, denominator)` → converted to FCPXML `offset="N/Ds"` format. This ensures sample-accurate alignment even for long timelines (>1 hour).
-
-### Model Download & Caching
-
-ASR models are downloaded from Hugging Face Hub on first analysis:
-
-```
-~/.cache/huggingface/hub/
-  models--mlx-community--Qwen3-ASR-0.6B-8bit/
-  models--mlx-community--Qwen3-ASR-1.7B-8bit/
-  models--mlx-community--Qwen3-ForcedAligner-0.6B-8bit/
-```
-
-Silenci monkey-patches `huggingface_hub.snapshot_download`'s tqdm progress bars to capture **byte-level download progress** and forward it to the UI via JSON-RPC notifications. This provides accurate "1.2 GB / 1.7 GB" progress display during model downloads.
-
----
-
-## 🗂️ Project Structure
-
-```
-Silenci/
-├── silence_cutter/                  # Python package
-│   ├── server.py                    # JSON-RPC server (2-pass ASR)
-│   ├── vad.py                       # Silero VAD + silence-based splitting
-│   ├── transcribe.py                # Qwen3-ASR + ForcedAligner + josa merge
-│   ├── fcpxml.py                    # FCPXML generation + subtitle splitting
-│   ├── srt.py / itt.py              # SRT, iTT subtitles
-│   ├── pipeline.py                  # CLI pipeline
-│   └── ...
-├── SilenciApp/                # Swift macOS app
-│   ├── Package.swift
-│   └── Sources/
-│       ├── App.swift                # Entry point + menu (env cleanup)
-│       ├── ContentView.swift        # Main layout + analysis popup
-│       ├── Models/
-│       │   ├── AnalysisService.swift    # Analysis runner + Python bridge
-│       │   ├── AnalysisSettings.swift   # Settings model (UserDefaults)
-│       │   └── ...
-│       ├── Services/
-│       │   ├── PythonBridge.swift        # JSON-RPC communication
-│       │   ├── PythonEnvironment.swift   # Auto venv install/cleanup
-│       │   └── ExportService.swift       # FCPXML/SRT/iTT (word-based split)
-│       └── Views/
-│           ├── AnalyzeDialogView.swift   # Pre-analysis settings popup
-│           ├── AnalysisProgressView.swift # Progress + model download + cancel
-│           ├── ClipCardView.swift        # Clip card (video edit + subtitle)
-│           ├── WordFlowView.swift        # Word-level editing UI
-│           ├── RetranscribeSheetView.swift # FCPXML retranscribe settings + progress
-│           └── SettingsView.swift        # Settings sheet (incl. app language)
-├── build-release.sh                 # Release build → dist/SilenciApp.app
-├── setup_mac.sh                     # Auto Python environment setup
-└── docs/                            # Diagrams & screenshots
-```
-
----
-
-## 🛠️ Troubleshooting
-
-<details>
-<summary><b>ffmpeg/ffprobe not found</b></summary>
+### Basic
 
 ```bash
-brew install ffmpeg
+silence-cutter resub "My Interview.fcpxmld"
 ```
 
-The app automatically adds `/opt/homebrew/bin` to PATH.
-</details>
+Outputs are written next to the input file.
 
-<details>
-<summary><b>Model download is slow</b></summary>
-
-ASR models are downloaded from Hugging Face on first analysis.
-Byte-level progress is shown in the app. After download, models are cached in `~/.cache/huggingface/hub/`.
-</details>
-
-<details>
-<summary><b>VAD is too sensitive / not sensitive enough</b></summary>
-
-**App:** Adjust **VAD Sensitivity** slider in the analysis popup.
-
-**CLI:**
-
-| Direction | Parameter |
-|:----------|:----------|
-| More sensitive (catch quiet speech) | `--vad-threshold 0.3` |
-| Less sensitive (only clear speech) | `--vad-threshold 0.7` |
-| Remove short silences too | `--min-silence-ms 150` |
-| Only remove long silences | `--min-silence-ms 500` |
-</details>
-
-<details>
-<summary><b>Subtitles are too short / too long</b></summary>
-
-**App:** Adjust **Max Chars** in the analysis popup (default: 20).
-
-**CLI:** `--max-subtitle-chars 30` for longer lines.
-</details>
-
-<details>
-<summary><b>Words are cut in the middle of subtitles</b></summary>
-
-The 2-Pass ASR approach prevents mid-word cuts.
-If it still happens, try increasing `--max-segment-seconds` (default 8s → 15s).
-</details>
-
----
-
-## 🧑‍💻 Contributing
+### Interview
 
 ```bash
-pip install -e ".[dev]"          # Install dev dependencies
-pytest                           # Run tests
-black --line-length 100 .        # Format
-ruff check silence_cutter/       # Lint
+silence-cutter resub "김시은_인터뷰.fcpxmld" \
+  --min-silence-sec 0.6
 ```
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+### Sermon / Lecture
+
+```bash
+silence-cutter resub "설교_230910.fcpxmld" \
+  --min-silence-sec 0.8
+```
+
+### With proper-noun script correction
+
+```bash
+silence-cutter resub "interview.fcpxmld" \
+  --script terms.md \
+  --min-silence-sec 0.6
+```
+
+`terms.md` is any Markdown file containing proper nouns and domain vocabulary. Tokens with ≥ 85% similarity and equal length are corrected conservatively (no content substitution, only spelling/notation fixes).
 
 ---
 
-## ⭐ Support
+## All `resub` Options
 
-If you find this project useful, please consider giving it a **star** ⭐
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--min-subtitle-chars` | `8` | Minimum characters per subtitle line |
+| `--max-subtitle-chars` | `27` | Maximum characters per subtitle line |
+| `--gap-bridge-sec` | `0.4` | Bridge pauses ≤ this value (s); longer silences stay as gaps |
+| `--no-gap-fill` | — | Disable gap bridging; use pure word timestamps |
+| `--min-silence-sec` | `0.7` | Minimum silence duration to remove (Output 2) |
+| `--silence-pad-ms` | `100` | Padding around speech segments (Output 2) |
+| `--no-remove-silence` | — | Skip Output 2 entirely |
+| `--script` | — | Path to `.md` for conservative proper-noun correction |
+| `--font-size` | `42` | Title overlay font size |
+| `--language` | `Korean` | Speech language passed to ASR |
+| `--asr-model` | `Qwen3-ASR-1.7B-8bit` | ASR model ID |
+| `--aligner-model` | `Qwen3-ForcedAligner-0.6B-8bit` | Forced aligner model ID |
 
-It helps others discover the project and motivates continued development.
+### `--min-silence-sec` by content type
 
-[![Star History Chart](https://api.star-history.com/svg?repos=leeyc09/Silence-Cutter&type=Date)](https://star-history.com/#leeyc09/Silence-Cutter&Date)
+| Content | Recommended | Notes |
+|---------|-------------|-------|
+| Interview | `0.6` | Natural pauses kept; hesitations removed |
+| Lecture | `0.4` | Tighter pacing |
+| Sermon | `0.8` | Deliberate pauses are part of the delivery |
+| General | `0.7` | Default |
 
 ---
 
-## 📄 License
+## How It Works — Pipeline
+
+```
+1. Parse FCPXML
+   ├─ Extract asset-clip list from spine
+   ├─ Build asset → file-start-timecode map
+   │    file_offset = clip_start_tc − asset_start_tc
+   └─ Strip stale <bookmark> from all <media-rep>
+
+2. Extract audio
+   └─ ffmpeg → 16 kHz mono WAV
+
+3. For each clip (parallel across VAD segments):
+   ├─ Silero VAD → speech segments in clip's file range
+   ├─ Split any segment > 15 s (aligner stability)
+   ├─ Qwen3-ASR-1.7B → transcript text + word list
+   ├─ Qwen3-ForcedAligner-0.6B → absolute word timestamps
+   └─ _split_subtitle_longform(min=8, max=27) → subtitle cards
+
+4. Build Output 1 — Gap-filled
+   ├─ _bridge_short_gaps(≤ 0.4 s) → stitch micro-pauses
+   ├─ title (lane 1, Position "0 -440") + caption (lane 2)
+   └─ New UID + project name suffix "_롱폼자막"
+
+5. Build Output 2 — Silence-removed
+   ├─ Silero VAD (min_silence_sec) → voice-only segments
+   ├─ Rebuild spine with compressed clips, cursor accumulation
+   ├─ Intersection subtitle mapping:
+   │    for each voice clip [a, b]:
+   │      chunks overlapping [a, b] → clipped to [a, b]
+   │      first piece starts at a, last ends at b (edge-to-edge)
+   └─ New UID + project name suffix "_무음제거"
+
+6. Auto-verify both outputs → log ✓ / ⚠️
+```
+
+---
+
+## FCPXML Element Structure
+
+Each subtitle card inserts **two sibling elements** into the parent `asset-clip`:
+
+```xml
+<!-- Lane 1: visible title overlay — positioned at bottom via param -->
+<title ref="r2" lane="1" offset="34119/1001s" duration="320/1001s"
+       name="감사합니다" start="3600s">
+  <param name="Position"
+         key="9999/999166631/999166633/1/100/101"
+         value="0 -440"/>        <!-- matches iTT caption position in 1080p -->
+  <text>
+    <text-style ref="rts1">감사합니다</text-style>
+  </text>
+  <text-style-def id="rts1">
+    <text-style font="Helvetica" fontSize="42" fontColor="1 1 1 1"
+                bold="1" shadowColor="0 0 0 0.75" shadowOffset="3 315"
+                alignment="center"/>
+  </text-style-def>
+</title>
+
+<!-- Lane 2: iTT caption (Caption editor, export to .srt / .itt) -->
+<caption lane="2" offset="34119/1001s" duration="320/1001s"
+         role="iTT?captionFormat=ITT.ko" start="3600s">
+  <text placement="bottom">
+    <text-style ref="rcts1">감사합니다</text-style>
+  </text>
+  <text-style-def id="rcts1">
+    <text-style font=".AppleSystemUIFont" fontSize="13" fontFace="Regular"
+                fontColor="1 1 1 1" backgroundColor="0 0 0 1"/>
+  </text-style-def>
+</caption>
+```
+
+**Notes:**
+- `<param>` must appear **before** `<text>` — required by FCPXML 1.14 DTD
+- `start="3600s"` is FCP's internal anchor for title effects (do not change)
+- `offset` = camera timecode of the subtitle's start (= file position + asset start TC)
+- `duration` = frame-snapped subtitle duration using `Fraction` arithmetic
+
+---
+
+## Importing to Final Cut Pro
+
+### Steps
+
+1. Locate the flat `.fcpxml` file (same directory as your input `.fcpxmld`)
+2. In FCP: **File → Import → XML…**
+3. Select the `_롱폼자막_공백메움.fcpxml` file
+4. Choose your library → click **OK**
+
+> **Use the flat `.fcpxml`, not the `.fcpxmld` bundle.**
+> The bundle requires the filesystem to treat it as a directory package; the flat file works in all environments.
+
+### Troubleshooting import
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Import dialog opens but nothing appears | Bundle (`.fcpxmld`) opened instead of flat file | Use the `.fcpxml` flat file |
+| File imports but no project appears | Library has existing project with same UID | Always use the latest run output — fresh UIDs every time |
+| FCP freezes / crashes on import | Stale NAS `<bookmark>` in source FCPXML | FCP_autoedit strips these automatically |
+| Subtitles appear at wrong frame | Source FCPXML has URL-encoded Korean path corruption | Check `src` attribute in `<media-rep>` for NFD encoding issues |
+
+### DTD validation
+
+```bash
+DTD="/Applications/Final Cut Pro.app/Contents/Frameworks/Interchange.framework/Versions/A/Resources/FCPXMLv1_14.dtd"
+cp "$DTD" /tmp/FCPXMLv1_14.dtd
+python3 -c "
+src = open('output_롱폼자막_공백메움.fcpxml').read()
+out = src.replace('<!DOCTYPE fcpxml>',
+      '<!DOCTYPE fcpxml SYSTEM \"/tmp/FCPXMLv1_14.dtd\">')
+open('/tmp/v.fcpxml', 'w').write(out)
+"
+xmllint --noout --valid /tmp/v.fcpxml && echo "✓ DTD valid"
+```
+
+---
+
+## Project Structure
+
+```
+silence_cutter/
+├── retranscribe.py      ← Core longform pipeline (resub)
+│   ├── _split_subtitle_longform()   Grade-based subtitle splitting
+│   ├── _bridge_short_gaps()         Micro-pause bridging
+│   ├── _add_subtitle_elements()     title + caption element writer
+│   ├── _build_silence_removed()     Output 2 (silence-removed) builder
+│   └── _verify_fcpxml()             Post-generation verifier
+├── transcribe.py        ASR + ForcedAligner + josa boundary merging
+├── vad.py               Silero VAD, segment splitting
+├── fcpxml.py            FCPXML helpers, frame snapping, cut-cmd subtitle split
+├── __main__.py          CLI entry point (argparse)
+└── itt.py               iTT subtitle export
+```
+
+---
+
+## License
 
 [Apache License 2.0](LICENSE)
+
+Based on [Silenci / Silence-Cutter](https://github.com/leeyc09/Silence-Cutter) by leeyc09.  
+Longform subtitle workflow, grade-based splitting, silence-removed output, and FCPXML safety fixes by [groundroot](https://github.com/groundroot).
