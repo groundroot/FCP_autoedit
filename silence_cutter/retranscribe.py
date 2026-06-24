@@ -237,21 +237,26 @@ _TITLE_POSITION_VALUE = "0 -440"
 
 
 def _add_subtitle_elements(clip, text, offset_frac, dur_frac, idx,
-                           effect_id, caption_role, font_size):
+                           effect_id, caption_role, font_size,
+                           speaker_role=None):
     """asset-clip에 title(lane 1) + caption(lane 2) 자막 요소를 추가.
 
     title은 Basic Title 기본 위치(화면 중앙) 대신 Position 파라미터로
     하단에 배치하여 iTT 캡션과 같은 위치에 표시되도록 한다.
+    speaker_role이 있으면 title에 role 속성을 추가한다 (FCP 타임라인 구분용).
     """
     ts_id = f"rts{idx}"
-    title_el = ET.SubElement(clip, "title", {
+    title_attrs = {
         "ref": effect_id,
         "lane": "1",
         "offset": _rational_str(offset_frac),
         "name": text[:50],
         "start": "3600s",
         "duration": _rational_str(dur_frac),
-    })
+    }
+    if speaker_role:
+        title_attrs["role"] = speaker_role
+    title_el = ET.SubElement(clip, "title", title_attrs)
     # Position 파라미터 (param*은 text 앞에 와야 DTD 유효)
     ET.SubElement(title_el, "param", {
         "name": "Position",
@@ -440,12 +445,12 @@ def _build_silence_removed(tree2, clip_records, audio_path, *,
 
             # 이 구간[a,b]과 겹치는 모든 자막을 잘라서 배치 → 구간 전체를 빈틈없이 덮음
             # (자막이 무음으로 잘린 두 구간에 걸치면 양쪽 클립에 이어서 표시됨)
-            pieces = []  # [lo_file, hi_file, text]
+            pieces = []  # [lo_file, hi_file, text, speaker_role]
             for c in chunks:
                 lo = max(a, c["start"])
                 hi = min(b, c["end"])
                 if hi > lo + 1e-9:
-                    pieces.append([lo, hi, c["text"]])
+                    pieces.append([lo, hi, c["text"], c.get("speaker_role")])
             pieces.sort(key=lambda p: p[0])
 
             if pieces:
@@ -455,14 +460,15 @@ def _build_silence_removed(tree2, clip_records, audio_path, *,
                     pieces[i][1] = pieces[i + 1][0]
                 pieces[-1][1] = b
 
-                for lo, hi, txt in pieces:
+                for lo, hi, txt, spk_role in pieces:
                     cs_tc = max(clip_start_tc, snap(lo) + asset_file_start)
                     ce_tc = min(clip_end_tc, snap(hi) + asset_file_start)
                     if ce_tc <= cs_tc:
                         ce_tc = min(clip_end_tc, cs_tc + frame)
                     ts_counter += 1
                     _add_subtitle_elements(new_clip, txt, cs_tc, ce_tc - cs_tc,
-                                           ts_counter, effect_id, caption_role, font_size)
+                                           ts_counter, effect_id, caption_role, font_size,
+                                           speaker_role=spk_role)
 
             cursor += dur
             total_kept += dur
@@ -536,6 +542,7 @@ def retranscribe(
     silence_pad_ms: int = 100,
     export_itt: bool = False,
     language_code: str = "ko",
+    num_speakers: Optional[int] = None,
     on_progress: Optional[Callable[[str], None]] = None,
 ) -> Path:
     """
@@ -566,9 +573,12 @@ def retranscribe(
         xml_path = fcpxml_path
 
     if output_path is None:
-        # 스펙 출력 파일명: 원본프로젝트_롱폼자막_공백메움.fcpxmld
+        # 출력 폴더: 원본 파일과 같은 위치에 프로젝트명 폴더 생성
+        # 예) 김시은.fcpxmld → 김시은/김시은_롱폼자막_공백메움.fcpxmld
         suffix = "_롱폼자막_공백메움" if fill_gaps else "_롱폼자막"
-        output_path = fcpxml_path.parent / (fcpxml_path.stem + suffix + ".fcpxmld")
+        proj_dir = fcpxml_path.parent / fcpxml_path.stem
+        proj_dir.mkdir(parents=True, exist_ok=True)
+        output_path = proj_dir / (fcpxml_path.stem + suffix + ".fcpxmld")
     output_path = Path(output_path)
 
     # 1. FCPXML 파싱
@@ -687,6 +697,19 @@ def retranscribe(
 
     clip_records = []  # 무음제거 버전 재구성용 클립별 데이터
 
+    # 화자 분리 모듈 (resemblyzer 없으면 None으로 폴백)
+    _diarize_fn = None
+    _assign_fn = None
+    _role_fn = None
+    try:
+        from .diarize import diarize_audio, assign_speaker, speaker_role_name
+        _diarize_fn = diarize_audio
+        _assign_fn = assign_speaker
+        _role_fn = speaker_role_name
+        _log("[diarize] 화자 분리 활성화")
+    except ImportError:
+        _log("[diarize] resemblyzer 없음, 화자 분리 비활성화")
+
     for clip_idx, clip in enumerate(clips):
         # 기존 title과 caption 제거
         for title in list(clip.findall("title")):
@@ -765,6 +788,21 @@ def retranscribe(
             for ch in chunks:
                 ch["text"] = _correct_with_script(ch["text"], script_terms)
 
+        # 화자 분리 → 각 chunk에 speaker_role 부여
+        if _diarize_fn is not None:
+            diar_segs = _diarize_fn(
+                str(audio_path), file_start, file_end,
+                num_speakers=num_speakers,
+                min_speakers=2, max_speakers=4,
+                log=_log,
+            )
+            for ch in chunks:
+                spk_id = _assign_fn(ch["start"], ch["end"], diar_segs)
+                ch["speaker_role"] = _role_fn(spk_id)
+        else:
+            for ch in chunks:
+                ch["speaker_role"] = None
+
         # 무음제거 버전(결과물 2)용 — 단어 정렬 시간 그대로(미가공) 저장.
         # 무음제거본은 클립 교집합 분배로 구간을 빈틈없이 덮으므로 원시 시간을 사용.
         clip_records.append({
@@ -804,7 +842,8 @@ def retranscribe(
             # 파일 위치 → FCPXML 타임코드 변환 (에셋 시작 TC 더하기)
             chunk_tc_start = chunk_start + asset_file_start
             _add_subtitle_elements(clip, chunk["text"], chunk_tc_start, chunk_dur,
-                                   ts_counter, effect_id, caption_role, font_size)
+                                   ts_counter, effect_id, caption_role, font_size,
+                                   speaker_role=chunk.get("speaker_role"))
 
     # 7. 저장 헬퍼
     def _save_tree(tree_obj, out_path: Path) -> None:
@@ -832,7 +871,19 @@ def retranscribe(
     _log(f"[retranscribe] 결과물 1 완료! → {output_path}")
     _verify_fcpxml(tree, "결과물1 공백메움", _log, expect_contiguous=False)
 
+    # 클립 총 길이 계산 (결과 요약용)
+    total_clip_sec = sum(r["clip_dur"] for r in clip_records) if clip_records else 0.0
+
+    def _fmt(sec: float) -> str:
+        h = int(sec // 3600)
+        m = int((sec % 3600) // 60)
+        s = sec % 60
+        if h:
+            return f"{h}시간 {m}분 {s:.1f}초"
+        return f"{m}분 {s:.1f}초"
+
     # 결과물 2: 롱폼자막_공백메움_무음제거
+    kept_sec = None
     if remove_silence and tree2 is not None and clip_records:
         _log("[retranscribe] 무음제거 버전 생성 중...")
         tree2, kept_sec = _build_silence_removed(
@@ -848,6 +899,21 @@ def retranscribe(
         _save_tree(tree2, output_path2)
         _log(f"[retranscribe] 결과물 2 완료! ({kept_sec:.1f}s 유지) → {output_path2}")
         _verify_fcpxml(tree2, "결과물2 무음제거", _log)
+
+    # 최종 요약
+    _log("")
+    _log("=" * 52)
+    _log("  작업 완료 요약")
+    _log("=" * 52)
+    _log(f"  원본 클립 길이  : {_fmt(total_clip_sec)}  ({total_clip_sec:.1f}s)")
+    if kept_sec is not None:
+        cut_sec = total_clip_sec - kept_sec
+        ratio = cut_sec / total_clip_sec * 100 if total_clip_sec else 0
+        _log(f"  잘라낸 분량     : {_fmt(cut_sec)}  ({cut_sec:.1f}s, {ratio:.1f}%)")
+        _log(f"  최종 분량(무음제거): {_fmt(kept_sec)}  ({kept_sec:.1f}s)")
+    else:
+        _log("  무음제거        : 생략")
+    _log("=" * 52)
 
     # iTT 생성
     if export_itt and all_transcribed_timeline:

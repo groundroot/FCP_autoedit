@@ -197,6 +197,7 @@ def cmd_resub(args):
         silence_pad_ms=args.silence_pad_ms,
         export_itt=args.itt,
         language_code=lang_code,
+        num_speakers=args.num_speakers,
     )
     print(f"\n생성 완료: {result}")
 
@@ -278,6 +279,8 @@ def main():
                             help="제거할 최소 무음 길이 초 (기본 0.7 / 강의 0.4 / 인터뷰 0.6 / 설교 0.8)")
     resub_parser.add_argument("--silence-pad-ms", type=int, default=100, help="음성 앞뒤 패딩 ms (기본 100)")
     resub_parser.add_argument("--itt", action="store_true", help="iTT 자막 파일도 함께 생성")
+    resub_parser.add_argument("--num-speakers", type=int, default=None,
+                            help="화자 수 고정 (2~4, 생략 시 자동 감지). 화자 분리 결과는 FCP 타임라인 Role로 표시됨")
 
     # --- multi 커맨드 ---
     multi_parser = subparsers.add_parser(
