@@ -267,8 +267,8 @@ def main():
     resub_parser.add_argument("--aligner-model", type=str, default="mlx-community/Qwen3-ForcedAligner-0.6B-8bit",
                             help="ForcedAligner 모델 ID")
     resub_parser.add_argument("--font-size", type=int, default=42, help="자막 폰트 크기 (기본: 42)")
-    resub_parser.add_argument("--max-subtitle-chars", type=int, default=28, help="자막 한 줄 최대 글자수 (기본: 28)")
-    resub_parser.add_argument("--min-subtitle-chars", type=int, default=11, help="자막 한 줄 최소 글자수 (기본: 11)")
+    resub_parser.add_argument("--max-subtitle-chars", type=int, default=27, help="자막 한 줄 최대 글자수 (기본: 27)")
+    resub_parser.add_argument("--min-subtitle-chars", type=int, default=8, help="자막 한 줄 최소 글자수 (기본: 8)")
     resub_parser.add_argument("--script", type=str, default=None, help="대본 .md 경로 (오타/고유명사 보수적 교정)")
     resub_parser.add_argument("--no-gap-fill", action="store_true", help="짧은 끊김 메움 비활성화 (순수 단어 타이밍)")
     resub_parser.add_argument("--gap-bridge-sec", type=float, default=0.4,

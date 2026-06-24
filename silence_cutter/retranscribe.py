@@ -62,22 +62,64 @@ def _build_asset_start_map(root: ET.Element) -> "dict[str, Fraction]":
     return result
 
 
-def _split_subtitle_longform(words, *, min_chars: int = 18, max_chars: int = 44):
-    """롱폼 영상용 자막 분할 — 의미 단위·호흡 우선, 한 줄(줄바꿈 없음) 18~44자.
+import re as _re
+
+# ── 자막 분할 break point 등급 패턴 ───────────────────────────────────────────
+# Grade 3 (종결): 문장이 완전히 끝나는 느낌 → 즉시 분할
+_SUB_GRADE3 = _re.compile(
+    r'(습니다|합니다|됩니다|겠습니다|셨습니다'
+    r'|에요|이에요|예요|네요|겠어요|군요|거든요|죠'
+    r'|아요|어요|해요|셔요'
+    r'|는데요|인데요|잖아요|니까요|나요|까요'
+    r'|니다'
+    r'|[.!?。]'
+    r')$'
+)
+# Grade 2 (접속): 다음 카드로 자연스럽게 이어짐
+_SUB_GRADE2 = _re.compile(
+    r'(고|며|하며|이며'
+    r'|서|해서|어서|아서|라서|여서'
+    r'|지만|하지만|이지만'
+    r'|는데|은데|인데'
+    r'|니까|으니까|아니까'
+    r'|거든|더니|었더니|았더니'
+    r'|면서|으면서'
+    r'|[,，]'
+    r')$'
+)
+# Grade 1 (조사 뒤): 마지막 수단
+_SUB_GRADE1 = _re.compile(
+    r'(을|를|이|가|은|는|에서|에게|으로|로'
+    r'|와|과|랑|이랑|도|만|까지|부터|마저|조차'
+    r')$'
+)
+# 단독 조사 단어 자체: 이 단어로 끝내면 조사 홀로 남음 → 분할 불가
+_SUB_PARTICLE_ONLY = _re.compile(r'^(은|는|이|가|을|를|에|의|로|와|과|도|만|서|랑)$')
+
+
+def _sub_rank(word_text: str) -> int:
+    if _SUB_GRADE3.search(word_text): return 3
+    if _SUB_GRADE2.search(word_text): return 2
+    if _SUB_GRADE1.search(word_text): return 1
+    return 0
+
+
+def _split_subtitle_longform(words, *, min_chars: int = 8, max_chars: int = 27):
+    """롱폼 영상용 자막 분할 — 의미 단위·호흡 우선, 한 줄(줄바꿈 없음) 8~27자.
 
     각 Caption의 start/end는 forced-alignment 단어 타임스탬프를 그대로 사용한다
     (글자 수로 시간 재분배하지 않음 — start=첫 단어 시작, end=마지막 단어 끝).
 
-    끊는 기준:
-    - 문장 끝(종결어미/구두점)에서 우선 분할 (최소 길이 확보)
-    - 길이 초과 시 **마지막 자연 경계(절 경계·호흡 쉼)** 까지 되돌려 끊어
-      어절 중간(예 "듣기|시작했던")에서 잘리지 않게 함
-    - 조사·짧은 수식어가 홀로 떨어지지 않도록 함
+    끊는 기준 (Grade 3 > 2 > 1):
+    - Grade 3 (종결어미/구두점): 즉시 분할 (min_chars 이상, overflow 없을 때)
+    - Grade 2 (접속어미): overflow 시 선호 경계
+    - Grade 1 (조사 뒤): 마지막 수단
+    overflow 시 max_chars 이내 후보 우선, 분할 후 i를 tail 첫 단어로 롤백.
 
-    반환: [{"text": str, "start": float, "end": float}, ...] (단어 시간 기반)
+    핵심 버그 수정: "습니다"/"합니다" 등 종결어미를 Grade 3 즉시분할로 처리.
+    이전 코드는 _CLAUSE_END(last_break만 기록)에 "합니다" 포함 → "하였습니다"
+    뒤에 "감사합니다"가 오면 두 단어가 한 자막으로 합쳐지는 오류 발생.
     """
-    from .fcpxml import _SENTENCE_END, _CLAUSE_END
-
     if not words:
         return []
 
@@ -85,54 +127,83 @@ def _split_subtitle_longform(words, *, min_chars: int = 18, max_chars: int = 44)
         return {"text": " ".join(w.text for w in ws),
                 "start": ws[0].start, "end": ws[-1].end}
 
-    chunks = []
-    cur = []                 # 현재 자막에 누적된 단어들
-    last_break = -1          # cur 내에서 끊기 좋은 경계 (이 인덱스 뒤에서 분할 가능)
+    def head_len(idx):
+        return len(" ".join(w.text for w in cur[:idx + 1]))
+
+    from dataclasses import dataclass
+
+    @dataclass
+    class _BP:
+        index: int
+        rank: int
+
+    chunks      = []
+    cur         = []
+    breaks      = []   # _BP 목록
+    cur_start_i = 0    # words[] 내 cur[0]의 전역 인덱스
 
     i = 0
     n = len(words)
     while i < n:
-        w = words[i]
+        w       = words[i]
+        is_last = (i == n - 1)
         cur.append(w)
         cur_text = " ".join(x.text for x in cur)
-        is_last = (i == n - 1)
+        cur_idx  = len(cur) - 1
+        r = _sub_rank(w.text)
 
+        # break point 기록 (단독 조사 단어 자체는 제외)
+        if r >= 1 and not _SUB_PARTICLE_ONLY.fullmatch(w.text):
+            breaks.append(_BP(index=cur_idx, rank=r))
+
+        # ── 1) 길이 초과 (마지막 단어도 포함) ─────────────────────────────────
+        if len(cur_text) >= max_chars:
+            nxt = words[i + 1].text if not is_last else ""
+            # 다음이 단독 조사면 흡수
+            if nxt and _SUB_PARTICLE_ONLY.fullmatch(nxt) and len(cur_text) < max_chars + 4:
+                i += 1
+                continue
+
+            candidates = [b for b in breaks if head_len(b.index) >= min_chars]
+            within = [b for b in candidates if head_len(b.index) <= max_chars]
+            over   = [b for b in candidates if head_len(b.index) >  max_chars]
+
+            if within or over:
+                pool = within if within else over
+                best = max(pool, key=lambda b: (b.rank, b.index))
+                if best.index == cur_idx:
+                    chunks.append(mk(cur))
+                    cur = []; breaks = []; cur_start_i = i + 1
+                    i += 1
+                    if is_last: break
+                    continue
+                else:
+                    head = cur[:best.index + 1]
+                    chunks.append(mk(head))
+                    i = cur_start_i + best.index + 1  # tail 첫 단어로 롤백
+                    cur = []; breaks = []; cur_start_i = i
+                    continue
+            else:
+                chunks.append(mk(cur))
+                cur = []; breaks = []; cur_start_i = i + 1
+                i += 1
+                if is_last: break
+                continue
+
+        # ── 2) 종결어미 + 최소 길이 → 즉시 분할 ──────────────────────────────
+        if r == 3 and len(cur_text) >= min_chars:
+            chunks.append(mk(cur))
+            cur = []; breaks = []; cur_start_i = i + 1
+            i += 1
+            if is_last: break
+            continue
+
+        # ── 3) 마지막 단어, overflow/Grade3 없음 → 종료 ───────────────────────
         if is_last:
             chunks.append(mk(cur))
             cur = []
-            last_break = -1
-            i += 1
-            continue
+            break
 
-        # 문장 끝 — 최소 길이 이상이면 즉시 분할
-        if _SENTENCE_END.search(w.text) and len(cur_text) >= min_chars:
-            chunks.append(mk(cur))
-            cur = []
-            last_break = -1
-            i += 1
-            continue
-
-        # 절 경계/호흡 쉼 — 끊기 좋은 후보로 기록
-        if _CLAUSE_END.search(w.text):
-            last_break = len(cur) - 1
-
-        # 길이 초과 — 자연 경계로 되돌려 끊기
-        if len(cur_text) >= max_chars:
-            nxt = words[i + 1].text
-            head_len = len(" ".join(x.text for x in cur[:last_break + 1])) if last_break >= 0 else 0
-            if last_break >= 0 and last_break < len(cur) - 1 and head_len >= min_chars:
-                # 마지막 절 경계 뒤에서 분할(앞 조각이 최소 길이 이상일 때만)
-                head = cur[:last_break + 1]
-                tail = cur[last_break + 1:]
-                chunks.append(mk(head))
-                cur = tail
-                last_break = -1
-            elif len(nxt) <= 2 and len(cur_text) < max_chars + 2:
-                pass  # 짧은 조사/수식어는 흡수해 분리 방지
-            else:
-                chunks.append(mk(cur))
-                cur = []
-                last_break = -1
         i += 1
 
     if cur:
