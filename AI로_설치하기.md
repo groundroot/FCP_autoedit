@@ -5,6 +5,47 @@
 
 ---
 
+## 설치되는 것들 한눈에 보기
+
+설치 과정에서 아래 AI 모델과 라이브러리들이 자동으로 준비됩니다.
+
+### AI 모델 (첫 실행 시 자동 다운로드 · 총 약 2.3 GB)
+
+| 모델 | 크기 | 역할 |
+|------|------|------|
+| **Qwen3-ASR-1.7B** (Alibaba) | ~1.7 GB | 음성 → 텍스트 변환 (Speech-to-Text). Apple MLX로 M1/M2/M3/M4에서 빠르게 실행 |
+| **Qwen3-ForcedAligner-0.6B** (Alibaba) | ~600 MB | 각 단어가 몇 초에 말해졌는지 정렬 (Word-level Forced Alignment) |
+| **Silero VAD v5** (Silero) | ~2 MB | 음성 구간과 무음 구간을 ML로 구별 (Voice Activity Detection) |
+
+> 모든 AI 모델은 로컬에서만 실행됩니다. 인터넷이나 API 키가 **필요 없습니다**.
+
+---
+
+### 시스템 도구 (없으면 자동 설치)
+
+| 도구 | 버전 | 역할 |
+|------|------|------|
+| **Python** | 3.11 | 전체 파이프라인 실행 환경 |
+| **ffmpeg** | 최신 | 영상에서 오디오 추출 |
+| **Homebrew** | 최신 | Mac용 패키지 매니저 (없으면 먼저 설치 필요) |
+
+---
+
+### Python 라이브러리
+
+| 라이브러리 | 역할 |
+|-----------|------|
+| **mlx-audio** | Apple Silicon 전용 MLX 프레임워크로 AI 모델 실행 |
+| **torch** (PyTorch) | Silero VAD 실행에 필요한 ML 기반 프레임워크 |
+| **silero-vad** | PyTorch 기반 VAD 라이브러리 |
+| **librosa** | 오디오 분석 (샘플레이트, 파형 처리) |
+| **soundfile** | WAV 파일 읽기/쓰기 |
+| **numpy** | 음성 데이터 수치 연산 |
+| **soynlp** | 한국어 자연어 처리 (조사 경계 분석) |
+| **gradio** | 웹 UI (선택적 기능) |
+
+---
+
 ## 1단계 — 레포 복사하기 (Clone)
 
 ### 방법 A: 터미널 명령어로 복사
