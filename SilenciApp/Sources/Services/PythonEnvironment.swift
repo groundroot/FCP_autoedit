@@ -35,15 +35,20 @@ final class PythonEnvironment {
     // MARK: - Constants
 
     /// Version stamp — bump this when dependencies change to force reinstall.
-    private static let envVersion = "4"
+    private static let envVersion = "5"
 
     /// pip packages required for the server mode.
     private static let serverDependencies: [String] = [
         "numpy<2",
         "soundfile>=0.12.0",
         "torch>=2.0.0",
+        "torchaudio",
         "silero-vad>=5.1.2",
+        "mlx>=0.22.0",
         "mlx-audio>=0.3.0",
+        "webrtcvad",
+        "scipy",
+        "scikit-learn",
         "soynlp",
     ]
 

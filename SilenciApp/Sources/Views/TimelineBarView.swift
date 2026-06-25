@@ -122,42 +122,6 @@ struct TimelineBarView: View {
 
 // MARK: - Preview
 
-#Preview("With segments") {
-    TimelineBarView(
-        segments: [
-            Segment(start: 0.5, end: 3.0, text: "Hello world", isKept: true),
-            Segment(start: 4.0, end: 7.5, text: "Second segment", isKept: false),
-            Segment(start: 8.0, end: 10.0, text: "Third segment", isKept: true),
-        ],
-        duration: 12.0,
-        currentTime: 5.0,
-        onSeek: { print("Seek to \($0)") }
-    )
-    .frame(height: 60)
-    .padding()
-}
-
-#Preview("Empty segments") {
-    TimelineBarView(
-        segments: [],
-        duration: 10.0,
-        currentTime: 0,
-        onSeek: { _ in }
-    )
-    .frame(height: 60)
-    .padding()
-}
-
-#Preview("Zero duration") {
-    TimelineBarView(
-        segments: [],
-        duration: 0,
-        currentTime: 0,
-        onSeek: { _ in }
-    )
-    .frame(height: 60)
-    .padding()
-}
 
 // MARK: - Wrapper that isolates currentTime observation
 

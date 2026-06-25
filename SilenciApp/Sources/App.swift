@@ -12,7 +12,9 @@ private let isTestAnalyzeMode = CommandLine.arguments.contains("--test-analyze")
 
 @main
 struct SilenciApp: App {
+    @NSApplicationDelegateAdaptor(SilenciAppDelegate.self) var appDelegate
     @State private var pythonEnv = PythonEnvironment()
+    @State private var appActions = AppActions()
     @State private var showRemoveConfirm = false
 
     init() {
@@ -29,7 +31,7 @@ struct SilenciApp: App {
             } else if isTestAnalyzeMode {
                 AnalyzeTestRunner()
             } else {
-                ContentView(pythonEnv: pythonEnv)
+                ContentView(pythonEnv: pythonEnv, appActions: appActions)
                     .task {
                         await pythonEnv.ensureReady()
                     }
@@ -37,6 +39,14 @@ struct SilenciApp: App {
         }
         .defaultSize(width: 1200, height: 800)
         .commands {
+            // File > Import FCPXML…  (⌘I)
+            CommandGroup(after: .newItem) {
+                Button("FCPXML 가져오기…") {
+                    appActions.showImportPanel = true
+                }
+                .keyboardShortcut("i", modifiers: .command)
+            }
+
             CommandGroup(after: .appInfo) {
                 Button(L10n.tr("menu.remove_env", pythonEnv.installedSizeString)) {
                     showRemoveConfirm = true

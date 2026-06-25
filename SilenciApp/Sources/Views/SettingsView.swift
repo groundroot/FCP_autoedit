@@ -240,10 +240,3 @@ struct SettingsView: View {
     }
 }
 
-#Preview {
-    SettingsView(
-        settings: AnalysisSettings(),
-        isPresented: .constant(true)
-    )
-    .preferredColorScheme(.dark)
-}

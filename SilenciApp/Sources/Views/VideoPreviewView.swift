@@ -22,9 +22,11 @@ private struct PlayerNSView: NSViewRepresentable {
 }
 
 /// A video player view that wraps AVKit's AVPlayerView and supports drag-and-drop
-/// of video files. Shows a placeholder prompt when no video is loaded.
+/// of video files and FCPXML bundles. Shows a placeholder prompt when no video is loaded.
 struct VideoPreviewView: View {
     @Bindable var model: VideoPlayerModel
+    /// .fcpxmld / .fcpxml 파일이 드롭됐을 때 ContentView로 위임하는 콜백.
+    var onFCPXMLDrop: ((URL) -> Void)? = nil
 
     /// Accepted video file extensions for drag-and-drop.
     private static let videoExtensions: Set<String> = [
@@ -40,10 +42,15 @@ struct VideoPreviewView: View {
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first,
-                  Self.isVideoFile(url) else {
-                return false
+            guard let url = urls.first else { return false }
+            let ext = url.pathExtension.lowercased()
+            // FCPXMLD/FCPXML → ContentView 핸들러로 위임
+            if ext == "fcpxmld" || ext == "fcpxml" {
+                onFCPXMLDrop?(url)
+                return true
             }
+            // 비디오/오디오 파일 → 플레이어에 로드
+            guard Self.isVideoFile(url) else { return false }
             model.loadVideo(url: url)
             return true
         }

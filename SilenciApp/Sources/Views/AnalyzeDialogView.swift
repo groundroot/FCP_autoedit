@@ -183,11 +183,3 @@ struct AnalyzeDialogView: View {
     }
 }
 
-#Preview {
-    AnalyzeDialogView(
-        settings: AnalysisSettings(),
-        isPresented: .constant(true),
-        onStart: {}
-    )
-    .preferredColorScheme(.dark)
-}

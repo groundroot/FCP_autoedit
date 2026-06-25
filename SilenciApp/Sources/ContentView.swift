@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     var pythonEnv: PythonEnvironment
+    var appActions: AppActions
     @State private var bridge = PythonBridge()
     @State private var videoModel = VideoPlayerModel()
     @State private var analysisService = AnalysisService()
@@ -14,6 +15,7 @@ struct ContentView: View {
     @State private var showAnalyzeDialog = false
     @State private var retranscribeItem: RetranscribeItem?
     @State private var retranscribeState: RetranscribeState = .idle
+    @State private var isDroppingFCPXML = false
 
     struct RetranscribeItem: Identifiable {
         let id = UUID()
@@ -37,8 +39,53 @@ struct ContentView: View {
             if !pythonEnv.state.isReady {
                 setupOverlay
             }
+
+            // 드래그앤드롭 오버레이 — FCPXMLD 파일을 창 위로 드래그할 때 표시
+            if isDroppingFCPXML {
+                ZStack {
+                    Color.black.opacity(0.55)
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.cyan, lineWidth: 3)
+                        .padding(24)
+                    VStack(spacing: 14) {
+                        Image(systemName: "doc.badge.arrow.up")
+                            .font(.system(size: 52))
+                            .foregroundStyle(.cyan)
+                        Text("FCPXML 파일을 여기에 놓으세요")
+                            .font(.title2.bold())
+                            .foregroundStyle(.white)
+                        Text(".fcpxmld  /  .fcpxml")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
         }
         .preferredColorScheme(.dark)
+        // ① 드래그앤드롭 — Finder나 다른 앱에서 창으로 파일을 드래그
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first(where: {
+                ["fcpxmld", "fcpxml"].contains($0.pathExtension.lowercased())
+            }) else { return false }
+            handleImportedURL(url)
+            return true
+        } isTargeted: { targeted in
+            isDroppingFCPXML = targeted
+        }
+        // ② 메뉴바 "FCPXML 가져오기…" → AppActions.showImportPanel
+        .onChange(of: appActions.showImportPanel) { _, show in
+            if show {
+                appActions.showImportPanel = false
+                importFCPXML()
+            }
+        }
+        // ③ Dock 아이콘/Finder 연결 파일 열기 → SilenciAppDelegate → Notification
+        .onReceive(NotificationCenter.default.publisher(for: .openFCPXMLFile)) { note in
+            guard let url = note.object as? URL else { return }
+            handleImportedURL(url)
+        }
         .sheet(item: $retranscribeItem) { item in
             RetranscribeSheetView(
                 inputURL: item.inputURL,
@@ -160,7 +207,7 @@ struct ContentView: View {
             .frame(minWidth: 250)
         } detail: {
             VStack(spacing: 0) {
-                VideoPreviewView(model: videoModel)
+                VideoPreviewView(model: videoModel, onFCPXMLDrop: handleImportedURL)
                     .frame(maxHeight: .infinity)
 
                 Divider()
@@ -263,7 +310,7 @@ struct ContentView: View {
 
     // MARK: - Import FCPXML (Retranscribe to file)
 
-    /// Opens an NSOpenPanel for .fcpxml files, then shows the retranscribe settings sheet.
+    /// ① Import 버튼 — NSOpenPanel을 열어 파일 선택 후 handleImportedURL로 넘김.
     private func importFCPXML() {
         let openPanel = NSOpenPanel()
         openPanel.allowsMultipleSelection = false
@@ -271,17 +318,25 @@ struct ContentView: View {
         openPanel.canChooseFiles = true
         openPanel.treatsFilePackagesAsDirectories = false
         openPanel.message = L10n.tr("toolbar.import_fcpxml_message")
+        openPanel.allowedContentTypes = [
+            UTType(filenameExtension: "fcpxmld") ?? .directory,
+            UTType(filenameExtension: "fcpxml") ?? .xml,
+        ]
 
         let response = openPanel.runModal()
         guard response == .OK, let url = openPanel.url else { return }
+        handleImportedURL(url)
+    }
 
+    /// 드래그앤드롭 / Dock 열기 / 메뉴바 선택 결과 URL을 공통 처리.
+    private func handleImportedURL(_ url: URL) {
         let ext = url.pathExtension.lowercased()
         guard ext == "fcpxmld" || ext == "fcpxml" || ext == "xml" else {
             print("[Silenci] Unsupported file: \(url.lastPathComponent)")
             return
         }
 
-        // Resolve .fcpxmld bundle → Info.fcpxml inside
+        // .fcpxmld 번들 → 내부 Info.fcpxml 경로로 resolve
         let resolvedURL: URL
         if ext == "fcpxmld" {
             resolvedURL = url.appendingPathComponent("Info.fcpxml")
@@ -310,7 +365,7 @@ struct ContentView: View {
             let urlString = String(xmlString[range])
             // URL decode percent-encoded paths (e.g. Korean filenames)
             if let decoded = urlString.removingPercentEncoding,
-               let url = URL(string: decoded.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString) {
+               let _ = URL(string: decoded.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? urlString) {
                 let path = decoded.replacingOccurrences(of: "file://", with: "")
                 if FileManager.default.fileExists(atPath: path) {
                     return URL(fileURLWithPath: path)
@@ -421,6 +476,3 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView(pythonEnv: PythonEnvironment())
-}

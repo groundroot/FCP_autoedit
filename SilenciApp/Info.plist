@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.daeyoung.silenci</string>
+
+    <key>CFBundleName</key>
+    <string>Silenci</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>Silenci</string>
+
+    <key>CFBundleExecutable</key>
+    <string>SilenciApp</string>
+
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Daeyoung. All rights reserved.</string>
+
+    <!-- 드래그앤드롭으로 열 수 있는 파일 타입 -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>FCP XML Document</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>fcpxml</string>
+                <string>fcpxmld</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Video</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>mp4</string>
+                <string>mov</string>
+                <string>m4v</string>
+                <string>mkv</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+    </array>
+</dict>
+</plist>

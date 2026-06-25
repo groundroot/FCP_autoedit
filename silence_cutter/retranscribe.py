@@ -216,6 +216,53 @@ def _split_subtitle_longform(words, *, min_chars: int = 8, max_chars: int = 27):
     return chunks
 
 
+def _split_subtitle_variety(words, *, pause_threshold: float = 0.5, min_chars: int = 4):
+    """예능 자막 스타일 분할 — 자막 수 최소화, 완결 발화 단위 카드(로직 2).
+
+    분할 조건:
+    1. 단어 사이 침묵 > pause_threshold 초 (큰 호흡·포즈)
+    2. Grade 3 종결어미 (있어요, 했습니다, 어요, 네요 등) + min_chars 이상
+    글자 수 상한 없음 — 하나의 완결된 발화를 하나의 카드로.
+    title(시각 자막)과 caption(자막 트랙) 모두 이 조건에서 분리된다.
+    """
+    if not words:
+        return []
+
+    def mk(ws):
+        return {"text": " ".join(w.text for w in ws),
+                "start": ws[0].start, "end": ws[-1].end}
+
+    chunks = []
+    cur = []
+
+    for w in words:
+        if cur:
+            gap = w.start - cur[-1].end
+            cur_text = " ".join(x.text for x in cur)
+            # 조건 1: 큰 침묵 → 이전 구절 확정
+            if gap > pause_threshold and len(cur_text) >= min_chars:
+                chunks.append(mk(cur))
+                cur = []
+
+        cur.append(w)
+
+        # 조건 2: 종결어미 → 현재 구절 확정
+        cur_text = " ".join(x.text for x in cur)
+        if _SUB_GRADE3.search(w.text) and len(cur_text) >= min_chars:
+            chunks.append(mk(cur))
+            cur = []
+
+    if cur:
+        chunks.append(mk(cur))
+
+    # 겹침 제거
+    for i in range(1, len(chunks)):
+        if chunks[i]["start"] < chunks[i - 1]["end"]:
+            chunks[i - 1]["end"] = chunks[i]["start"]
+
+    return chunks
+
+
 def _bridge_short_gaps(chunks, max_bridge: float = 0.4):
     """자막 사이 짧은 끊김(≤max_bridge초)만 메움 — 읽기 편하게 하되 실제 음성 타이밍 보존.
 
@@ -543,6 +590,10 @@ def retranscribe(
     export_itt: bool = False,
     language_code: str = "ko",
     num_speakers: Optional[int] = None,
+    subtitle_style: str = "longform",
+    variety_pause_threshold: float = 0.5,
+    corrections_path: Optional[str | Path] = None,
+    style_ref_dir: Optional[str | Path] = None,
     on_progress: Optional[Callable[[str], None]] = None,
 ) -> Path:
     """
@@ -575,7 +626,10 @@ def retranscribe(
     if output_path is None:
         # 출력 폴더: 원본 파일과 같은 위치에 프로젝트명 폴더 생성
         # 예) 김시은.fcpxmld → 김시은/김시은_롱폼자막_공백메움.fcpxmld
-        suffix = "_롱폼자막_공백메움" if fill_gaps else "_롱폼자막"
+        if subtitle_style == "variety":
+            suffix = "_예능자막_공백메움" if fill_gaps else "_예능자막"
+        else:
+            suffix = "_롱폼자막_공백메움" if fill_gaps else "_롱폼자막"
         proj_dir = fcpxml_path.parent / fcpxml_path.stem
         proj_dir.mkdir(parents=True, exist_ok=True)
         output_path = proj_dir / (fcpxml_path.stem + suffix + ".fcpxmld")
@@ -589,11 +643,12 @@ def retranscribe(
     # 1-b. UID 충돌 방지: 새 프로젝트/이벤트 UID 부여 + 이름에 "_자막" 접미사
     #      (동일 UID의 프로젝트가 라이브러리에 이미 있으면 FCP가 임포트를 건너뜀)
     import uuid as _uuid
+    _proj_suffix = "_예능자막" if subtitle_style == "variety" else "_롱폼자막"
     for proj in root.iter("project"):
         proj.set("uid", str(_uuid.uuid4()).upper())
         pname = proj.get("name") or "Project"
-        if "롱폼자막" not in pname:
-            proj.set("name", pname + "_롱폼자막")
+        if _proj_suffix not in pname:
+            proj.set("name", pname + _proj_suffix)
     for event in root.iter("event"):
         event.set("uid", str(_uuid.uuid4()).upper())
         ename = event.get("name") or "Event"
@@ -665,11 +720,24 @@ def retranscribe(
     # asset 시작 타임코드 맵 (클립 start에서 빼서 파일 내 실제 위치 계산)
     asset_start_map = _build_asset_start_map(root)
 
+    # 단어 교정 사전 로드 (사용자 정의 오인식어 → 정답어)
+    from .corrections import load as _load_corrections, apply as _apply_corrections
+    _corrections = _load_corrections(corrections_path)
+    if _corrections:
+        _log(f"[retranscribe] 교정 사전 {len(_corrections)}개 로드"
+             + (f": {corrections_path}" if corrections_path else ""))
+
     # 대본(.md) 교정 어휘 로드 (선택)
     script_terms = set()
     if script_path:
         script_terms = _load_script_terms(script_path)
         _log(f"[retranscribe] 대본 교정 어휘 {len(script_terms)}개 로드: {script_path}")
+
+    # 스타일 참조 폴더 어휘 로드 — script_terms에 병합
+    if style_ref_dir:
+        from .style_ref import load_style_ref_dir as _load_style_ref
+        ref_vocab = _load_style_ref(style_ref_dir, log=_log)
+        script_terms |= ref_vocab
 
     # 6. 각 asset-clip 처리
     clips = list(spine.findall("asset-clip"))
@@ -773,17 +841,28 @@ def retranscribe(
             words=timeline_words,
         ))
 
-        # 자막 분할 (롱폼: 한 줄 18~44자 의미 단위)
+        # 자막 분할 (로직 1: 롱폼 / 로직 2: 예능)
         if all_words:
-            chunks = _split_subtitle_longform(
-                all_words,
-                min_chars=min_subtitle_chars,
-                max_chars=max_subtitle_chars,
-            )
+            if subtitle_style == "variety":
+                chunks = _split_subtitle_variety(
+                    all_words,
+                    pause_threshold=variety_pause_threshold,
+                )
+            else:
+                chunks = _split_subtitle_longform(
+                    all_words,
+                    min_chars=min_subtitle_chars,
+                    max_chars=max_subtitle_chars,
+                )
         else:
             chunks = [{"text": " ".join(full_text_parts), "start": file_start, "end": file_end}]
 
-        # 대본 기반 보수적 교정 (오타/고유명사)
+        # 1순위: 사용자 교정 사전 (정확 치환 — 오인식어 → 정답어)
+        if _corrections:
+            for ch in chunks:
+                ch["text"] = _apply_corrections(ch["text"], _corrections)
+
+        # 2순위: 대본/스타일참조 기반 보수적 교정 (유사도 매칭)
         if script_terms:
             for ch in chunks:
                 ch["text"] = _correct_with_script(ch["text"], script_terms)

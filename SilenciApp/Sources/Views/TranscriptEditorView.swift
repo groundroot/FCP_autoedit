@@ -140,15 +140,3 @@ struct TimeField: View {
     }
 }
 
-// MARK: - Previews
-
-#Preview("With segments") {
-    let service = AnalysisService()
-    service.segments = [
-        Segment(start: 0.0, end: 2.5, text: "Hello world", isKept: true),
-        Segment(start: 3.0, end: 5.5, text: "This is a test segment", isKept: true),
-        Segment(start: 6.0, end: 8.0, text: "Deleted segment", isKept: false),
-    ]
-    return TranscriptEditorView(analysisService: service, onSeek: { _ in }, videoModel: VideoPlayerModel())
-        .frame(width: 300, height: 400)
-}

@@ -198,8 +198,50 @@ def cmd_resub(args):
         export_itt=args.itt,
         language_code=lang_code,
         num_speakers=args.num_speakers,
+        subtitle_style=args.subtitle_style,
+        variety_pause_threshold=args.variety_pause_threshold,
+        corrections_path=args.corrections,
+        style_ref_dir=args.style_ref_dir,
     )
     print(f"\n생성 완료: {result}")
+
+
+def cmd_corrections(args):
+    """단어 교정 사전 관리 (add/list/remove/clear)"""
+    from .corrections import load as _load, save as _save, DEFAULT_PATH
+
+    corr_path = Path(args.corrections_file) if args.corrections_file else DEFAULT_PATH
+
+    if args.corrections_cmd == "list":
+        data = _load(corr_path)
+        if not data:
+            print(f"교정 사전이 비어있습니다. ({corr_path})")
+        else:
+            print(f"교정 사전 ({len(data)}개) — {corr_path}")
+            for wrong, correct in sorted(data.items()):
+                print(f"  {wrong}  →  {correct}")
+
+    elif args.corrections_cmd == "add":
+        data = _load(corr_path)
+        data[args.wrong] = args.correct
+        _save(data, corr_path)
+        print(f"추가: {args.wrong} → {args.correct}  ({corr_path})")
+
+    elif args.corrections_cmd == "remove":
+        data = _load(corr_path)
+        if args.wrong in data:
+            del data[args.wrong]
+            _save(data, corr_path)
+            print(f"삭제: {args.wrong}  ({corr_path})")
+        else:
+            print(f"없음: '{args.wrong}'는 교정 사전에 없습니다.")
+
+    elif args.corrections_cmd == "clear":
+        _save({}, corr_path)
+        print(f"교정 사전 초기화 완료: {corr_path}")
+
+    elif args.corrections_cmd == "path":
+        print(corr_path)
 
 
 def main():
@@ -281,6 +323,42 @@ def main():
     resub_parser.add_argument("--itt", action="store_true", help="iTT 자막 파일도 함께 생성")
     resub_parser.add_argument("--num-speakers", type=int, default=None,
                             help="화자 수 고정 (2~4, 생략 시 자동 감지). 화자 분리 결과는 FCP 타임라인 Role로 표시됨")
+    resub_parser.add_argument("--subtitle-style", type=str, default="longform",
+                            choices=["longform", "variety"],
+                            help="자막 분할 로직 선택: longform(기본, 글자 수 기반) | variety(예능 스타일, 침묵·종결어미 기반)")
+    resub_parser.add_argument("--variety-pause-threshold", type=float, default=0.5,
+                            help="예능 자막 스타일 침묵 분할 기준 초 (기본 0.5, --subtitle-style variety 전용)")
+    resub_parser.add_argument("--corrections", type=str, default=None,
+                            help="단어 교정 사전 JSON 경로 (생략 시 ~/.config/silenci/corrections.json 자동 사용)")
+    resub_parser.add_argument("--style-ref-dir", type=str, default=None,
+                            help="스타일 참조 폴더 경로 — FCPXML/SRT/TXT 자막 파일 어휘를 학습해 인식 교정에 활용")
+
+    # --- corrections 커맨드 ---
+    corr_parser = subparsers.add_parser(
+        "corrections",
+        help="단어 교정 사전 관리 — 반복 오인식 단어 등록/조회/삭제",
+    )
+    corr_parser.add_argument("--file", dest="corrections_file", type=str, default=None,
+                             help="사전 파일 경로 (기본: ~/.config/silenci/corrections.json)")
+    corr_sub = corr_parser.add_subparsers(dest="corrections_cmd")
+
+    # list
+    corr_sub.add_parser("list", help="교정 사전 전체 목록 출력")
+
+    # add
+    corr_add = corr_sub.add_parser("add", help="항목 추가: silence-cutter corrections add 서과 사과")
+    corr_add.add_argument("wrong", help="오인식된 단어 (ASR 출력)")
+    corr_add.add_argument("correct", help="정답 단어")
+
+    # remove
+    corr_rm = corr_sub.add_parser("remove", help="항목 삭제")
+    corr_rm.add_argument("wrong", help="삭제할 오인식 단어")
+
+    # clear
+    corr_sub.add_parser("clear", help="교정 사전 전체 초기화")
+
+    # path
+    corr_sub.add_parser("path", help="현재 교정 사전 파일 경로 출력")
 
     # --- multi 커맨드 ---
     multi_parser = subparsers.add_parser(
@@ -324,6 +402,11 @@ def main():
             cmd_extract(args)
         elif args.command == "resub":
             cmd_resub(args)
+        elif args.command == "corrections":
+            if not args.corrections_cmd:
+                corr_parser.print_help()
+            else:
+                cmd_corrections(args)
     except KeyboardInterrupt:
         print("\n중단되었습니다.", file=sys.stderr)
         sys.exit(130)
