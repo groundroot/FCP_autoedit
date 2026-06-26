@@ -127,3 +127,8 @@
 // MARK: - Settings Language
 "settings.app_language" = "应用语言";
 "settings.restart_hint" = "重启应用以完全应用更改";
+
+// MARK: - Text Based Editor
+"editor.auto_scroll" = "自动滚动";
+"editor.empty_title" = "请打开并分析视频";
+"editor.empty_subtitle" = "删除文字将自动移除对应的视频片段";

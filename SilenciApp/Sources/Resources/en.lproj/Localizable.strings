@@ -127,3 +127,8 @@
 // MARK: - Settings Language
 "settings.app_language" = "App Language";
 "settings.restart_hint" = "Restart the app to fully apply changes";
+
+// MARK: - Text Based Editor
+"editor.auto_scroll" = "Auto-scroll";
+"editor.empty_title" = "Open and analyze a video";
+"editor.empty_subtitle" = "Deleting text automatically removes the corresponding video segment";

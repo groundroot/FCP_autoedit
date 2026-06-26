@@ -127,3 +127,8 @@
 // MARK: - Settings Language
 "settings.app_language" = "アプリの言語";
 "settings.restart_hint" = "完全に適用するにはアプリを再起動してください";
+
+// MARK: - Text Based Editor
+"editor.auto_scroll" = "自動スクロール";
+"editor.empty_title" = "動画を開いて分析してください";
+"editor.empty_subtitle" = "テキストを削除すると対応する映像区間が自動的に削除されます";

@@ -1,7 +1,7 @@
 ## Silenci — 빌드 / 패키징 / 배포 자동화
 
-APP_NAME      := Silenci
-BUNDLE_ID     := com.daeyoung.silenci
+APP_NAME      := TextBasedEdit
+BUNDLE_ID     := com.daeyoung.textbasededit
 VERSION       := 1.0.0
 BUILD_NUMBER  := 1
 EXECUTABLE    := SilenciApp

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.daeyoung.silenci</string>
+    <string>com.daeyoung.textbasededit</string>
 
     <key>CFBundleName</key>
-    <string>Silenci</string>
+    <string>Text Based Edit</string>
 
     <key>CFBundleDisplayName</key>
-    <string>Silenci</string>
+    <string>Text Based Edit</string>
 
     <key>CFBundleExecutable</key>
     <string>SilenciApp</string>

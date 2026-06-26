@@ -127,3 +127,8 @@
 // MARK: - Settings Language
 "settings.app_language" = "앱 언어";
 "settings.restart_hint" = "앱을 다시 시작하면 완전히 적용됩니다";
+
+// MARK: - Text Based Editor
+"editor.auto_scroll" = "자동 스크롤";
+"editor.empty_title" = "영상을 열고 분석하세요";
+"editor.empty_subtitle" = "텍스트를 삭제하면 해당 영상 구간이 자동으로 제거됩니다";

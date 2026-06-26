@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var videoModel = VideoPlayerModel()
     @State private var analysisService = AnalysisService()
     @State private var settings = AnalysisSettings()
+    @State private var isPro: Bool = false
     @State private var bridgeStatus: String = ""
     @State private var isTesting = false
     @State private var showFindReplace = false
@@ -157,141 +158,24 @@ struct ContentView: View {
     // MARK: - Main Content
 
     private var mainContent: some View {
-        NavigationSplitView {
-            VStack(spacing: 0) {
-                HStack {
-                    Image(systemName: "text.quote")
-                        .foregroundStyle(.cyan)
-                    Text(L10n.tr("main.transcript"))
-                        .font(.headline)
-                }
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-
-                Divider()
-
-                if analysisService.isAnalyzing {
-                    AnalysisProgressView(progress: analysisService.progress, onCancel: {
-                        analysisService.cancelAnalysis()
-                    })
-                } else if !analysisService.segments.isEmpty {
-                    TranscriptEditorView(analysisService: analysisService, onSeek: { videoModel.seek(to: $0) }, videoModel: videoModel)
-                } else {
-                    Spacer()
-                    Text(L10n.tr("main.load_video"))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-
-                if let errorMsg = analysisService.error {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.yellow)
-                        Text(errorMsg)
-                            .lineLimit(3)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                }
-
-                if !bridgeStatus.isEmpty {
-                    Text(bridgeStatus)
-                        .font(.caption)
-                        .foregroundStyle(bridgeStatus.contains("✅") ? .green : .secondary)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                }
+        VStack(spacing: 0) {
+            topToolbarView
+            Divider()
+            HSplitView {
+                textEditorPanel
+                    .frame(minWidth: 360)
+                videoPanel
+                    .frame(minWidth: 260, idealWidth: 380, maxWidth: 520)
             }
-            .frame(minWidth: 250)
-        } detail: {
-            VStack(spacing: 0) {
-                VideoPreviewView(model: videoModel, onFCPXMLDrop: handleImportedURL)
-                    .frame(maxHeight: .infinity)
-
+            if showFindReplace {
                 Divider()
-
-                TimelineBarWrapper(
-                    segments: analysisService.segments,
-                    videoModel: videoModel,
-                    timelineDuration: analysisService.timelineDuration,
-                    onSeek: { videoModel.seek(to: $0) }
-                )
-                .frame(height: 60)
-
-                Divider()
-
-                if showFindReplace {
-                    FindReplaceView(analysisService: analysisService, isVisible: $showFindReplace)
-                    Divider()
-                }
-
-                // Toolbar
-                HStack(spacing: 12) {
-                    Button {
-                        let panel = NSOpenPanel()
-                        panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .audio, .mp3, .mpeg4Audio, .wav, .aiff]
-                        panel.allowsMultipleSelection = false
-                        panel.begin { response in
-                            if response == .OK, let url = panel.url {
-                                videoModel.loadVideo(url: url)
-                                showAnalyzeDialog = true
-                            }
-                        }
-                    } label: {
-                        Label(L10n.tr("toolbar.open"), systemImage: "folder")
-                    }
-
-                    Button {
-                        showAnalyzeDialog = true
-                    } label: {
-                        Label(L10n.tr("toolbar.analyze"), systemImage: "waveform.badge.magnifyingglass")
-                    }
-                    .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
-
-                    Button {
-                        importFCPXML()
-                    } label: {
-                        Label(L10n.tr("toolbar.import_fcpxml"), systemImage: "doc.badge.arrow.up")
-                    }
-                    .disabled(analysisService.isAnalyzing)
-
-                    Spacer()
-
-                    Button {
-                        showFindReplace.toggle()
-                    } label: {
-                        Label(L10n.tr("toolbar.find"), systemImage: "magnifyingglass")
-                    }
-                    .disabled(analysisService.segments.isEmpty)
-
-                    Menu {
-                        ForEach(ExportFormat.allCases) { format in
-                            Button(format.displayName) {
-                                exportFile(format: format)
-                            }
-                        }
-                    } label: {
-                        Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
-                    }
-                    .disabled(analysisService.segments.isEmpty)
-
-                    Button {
-                        showSettings.toggle()
-                    } label: {
-                        Label(L10n.tr("toolbar.settings"), systemImage: "gearshape")
-                    }
-                }
-                .padding(8)
+                FindReplaceView(analysisService: analysisService, isVisible: $showFindReplace)
             }
         }
         .background {
-            Button("") {
-                showFindReplace.toggle()
-            }
-            .keyboardShortcut("f", modifiers: .command)
-            .hidden()
+            Button("") { showFindReplace.toggle() }
+                .keyboardShortcut("f", modifiers: .command)
+                .hidden()
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(settings: settings, isPresented: $showSettings)
@@ -303,8 +187,151 @@ struct ContentView: View {
                 analysisService.startAnalysis(videoURL: url, environment: pythonEnv, settings: settings)
             }
         }
-        .onAppear {
-            settings.load()
+        .onAppear { settings.load() }
+    }
+
+    // MARK: - Top Toolbar
+
+    private var topToolbarView: some View {
+        HStack(spacing: 10) {
+            // Brand
+            HStack(spacing: 6) {
+                Image(systemName: "scissors")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.cyan)
+                Text("TEXT BASED EDIT")
+                    .font(.system(.headline, design: .rounded, weight: .black))
+                Text(isPro ? "PRO" : "FREE")
+                    .font(.caption2.weight(.heavy))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(
+                        isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
+                        in: RoundedRectangle(cornerRadius: 4)
+                    )
+            }
+
+            Divider().frame(height: 22).padding(.horizontal, 2)
+
+            // Open video
+            Button {
+                let panel = NSOpenPanel()
+                panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .audio, .mp3, .mpeg4Audio, .wav, .aiff]
+                panel.allowsMultipleSelection = false
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        videoModel.loadVideo(url: url)
+                        showAnalyzeDialog = true
+                    }
+                }
+            } label: {
+                Label(L10n.tr("toolbar.open"), systemImage: "folder")
+            }
+
+            // Analyze
+            Button { showAnalyzeDialog = true } label: {
+                Label(L10n.tr("toolbar.analyze"), systemImage: "waveform.badge.magnifyingglass")
+            }
+            .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
+
+            // Import FCPXML (resub)
+            Button { importFCPXML() } label: {
+                Label(L10n.tr("toolbar.import_fcpxml"), systemImage: "doc.badge.arrow.up")
+            }
+            .disabled(analysisService.isAnalyzing)
+
+            Spacer()
+
+            if !analysisService.segments.isEmpty {
+                Button { showFindReplace.toggle() } label: {
+                    Label(L10n.tr("toolbar.find"), systemImage: "magnifyingglass")
+                }
+
+                Menu {
+                    ForEach(ExportFormat.allCases) { format in
+                        Button(format.displayName) { exportFile(format: format) }
+                    }
+                } label: {
+                    Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
+                }
+            }
+
+            Button { showSettings.toggle() } label: {
+                Label(L10n.tr("toolbar.settings"), systemImage: "gearshape")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(.bar)
+    }
+
+    // MARK: - Text Editor Panel (left)
+
+    private var textEditorPanel: some View {
+        Group {
+            if analysisService.isAnalyzing {
+                AnalysisProgressView(progress: analysisService.progress) {
+                    analysisService.cancelAnalysis()
+                }
+            } else if !analysisService.segments.isEmpty {
+                TextBasedEditorView(
+                    analysisService: analysisService,
+                    currentTime: videoModel.currentTime,
+                    onSeek: { videoModel.seek(to: $0) }
+                )
+            } else {
+                editorEmptyState
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let err = analysisService.error {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow)
+                    Text(err).lineLimit(2)
+                }
+                .font(.caption)
+                .foregroundStyle(.red)
+                .padding(8)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .padding(8)
+            }
+        }
+    }
+
+    private var editorEmptyState: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Image(systemName: "text.cursor")
+                .font(.system(size: 60))
+                .foregroundStyle(.secondary.opacity(0.3))
+            Text(L10n.tr("editor.empty_title"))
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(L10n.tr("editor.empty_subtitle"))
+                .font(.body)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Video Panel (right)
+
+    private var videoPanel: some View {
+        VStack(spacing: 0) {
+            VideoPreviewView(model: videoModel, onFCPXMLDrop: handleImportedURL)
+                .frame(maxHeight: .infinity)
+            Divider()
+            TimelineBarWrapper(
+                segments: analysisService.segments,
+                videoModel: videoModel,
+                timelineDuration: analysisService.timelineDuration,
+                onSeek: { videoModel.seek(to: $0) }
+            )
+            .frame(height: 56)
         }
     }
 
