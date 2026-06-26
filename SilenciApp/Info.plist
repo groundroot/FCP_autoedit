@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.daeyoung.textbasededit</string>
+    <string>com.textbasededit</string>
 
     <key>CFBundleName</key>
     <string>Text Based Edit</string>

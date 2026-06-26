@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 extension Notification.Name {
-    static let openFCPXMLFile = Notification.Name("com.daeyoung.silenci.openFCPXMLFile")
+    static let openFCPXMLFile = Notification.Name("com.textbasededit.openFCPXMLFile")
 }
 
 /// App 레벨 메뉴바 명령을 ContentView로 전달하는 상태 브리지.
