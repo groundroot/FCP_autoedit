@@ -53,7 +53,7 @@ struct SettingsView: View {
 
     private var appLanguageSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("앱 언어 / App Language", systemImage: "globe")
+            Label(L10n.tr("settings.app_language"), systemImage: "globe")
                 .font(.subheadline.bold())
                 .foregroundStyle(.secondary)
 
@@ -68,7 +68,7 @@ struct SettingsView: View {
             }
 
             if appLanguage != L10n.currentLanguage || appLanguage != .system {
-                Text("앱을 다시 시작하면 완전히 적용됩니다")
+                Text(L10n.tr("settings.restart_hint"))
                     .font(.caption)
                     .foregroundStyle(.orange)
             }

@@ -45,6 +45,11 @@ bundle: build
 	# 앱 아이콘 복사
 	@if [ -f "$(ICON_SRC)" ]; then cp $(ICON_SRC) $(RESOURCES_DIR)/AppIcon.icns; fi
 
+	# 로컬라이제이션 (.lproj) 복사 — macOS가 시스템 언어에 맞는 Localizable.strings를 찾는 위치
+	@for lproj in Sources/Resources/*.lproj; do \
+		cp -r "$$lproj" $(RESOURCES_DIR)/; \
+	done
+
 	# silence_cutter Python 모듈 번들에 포함
 	@cp -r $(MODULE_SRC) $(RESOURCES_DIR)/silence_cutter
 	@echo "✅ 번들 완료: $(APP_BUNDLE)"

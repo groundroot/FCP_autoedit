@@ -41,6 +41,17 @@
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Daeyoung. All rights reserved.</string>
 
+    <!-- 로컬라이제이션 -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>ko</string>
+        <string>ja</string>
+        <string>zh-Hans</string>
+    </array>
+
     <!-- 드래그앤드롭으로 열 수 있는 파일 타입 -->
     <key>CFBundleDocumentTypes</key>
     <array>

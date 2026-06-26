@@ -103,3 +103,27 @@
 // MARK: - Import FCPXML
 "toolbar.import_fcpxml" = "导入FCPXML";
 "toolbar.import_fcpxml_message" = "选择已编辑的FCPXML文件重新生成字幕";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "将FCPXML文件拖放到此处";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "重新生成字幕";
+"retranscribe.input" = "输入";
+"retranscribe.output" = "输出";
+"retranscribe.change" = "更改";
+"retranscribe.language" = "语言";
+"retranscribe.ai_model" = "AI模型";
+"retranscribe.export_itt" = "同时导出iTT字幕";
+"retranscribe.start" = "开始重新生成字幕";
+"retranscribe.in_progress" = "重新生成字幕中…";
+"retranscribe.cancel" = "取消";
+"retranscribe.done" = "完成！";
+"retranscribe.show_in_finder" = "在Finder中显示";
+"retranscribe.close" = "关闭";
+"retranscribe.error" = "发生错误";
+"retranscribe.retry" = "重试";
+
+// MARK: - Settings Language
+"settings.app_language" = "应用语言";
+"settings.restart_hint" = "重启应用以完全应用更改";

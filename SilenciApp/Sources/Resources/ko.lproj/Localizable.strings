@@ -103,3 +103,27 @@
 // MARK: - Import FCPXML
 "toolbar.import_fcpxml" = "FCPXML 가져오기";
 "toolbar.import_fcpxml_message" = "편집된 FCPXML 파일을 선택하여 대본을 재생성합니다";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "FCPXML 파일을 여기에 놓으세요";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "자막 재생성";
+"retranscribe.input" = "입력";
+"retranscribe.output" = "저장";
+"retranscribe.change" = "변경";
+"retranscribe.language" = "언어";
+"retranscribe.ai_model" = "AI 모델";
+"retranscribe.export_itt" = "iTT 캡션도 함께 생성";
+"retranscribe.start" = "자막 재생성 시작";
+"retranscribe.in_progress" = "자막 재생성 중…";
+"retranscribe.cancel" = "취소";
+"retranscribe.done" = "완료!";
+"retranscribe.show_in_finder" = "Finder에서 보기";
+"retranscribe.close" = "닫기";
+"retranscribe.error" = "오류 발생";
+"retranscribe.retry" = "다시 시도";
+
+// MARK: - Settings Language
+"settings.app_language" = "앱 언어";
+"settings.restart_hint" = "앱을 다시 시작하면 완전히 적용됩니다";

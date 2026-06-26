@@ -103,3 +103,27 @@
 // MARK: - Import FCPXML
 "toolbar.import_fcpxml" = "FCPXML読み込み";
 "toolbar.import_fcpxml_message" = "編集済みFCPXMLファイルを選択して再文字起こし";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "FCPXMLファイルをここにドロップ";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "字幕再生成";
+"retranscribe.input" = "入力";
+"retranscribe.output" = "保存";
+"retranscribe.change" = "変更";
+"retranscribe.language" = "言語";
+"retranscribe.ai_model" = "AIモデル";
+"retranscribe.export_itt" = "iTTキャプションも出力する";
+"retranscribe.start" = "字幕再生成を開始";
+"retranscribe.in_progress" = "字幕再生成中…";
+"retranscribe.cancel" = "キャンセル";
+"retranscribe.done" = "完了！";
+"retranscribe.show_in_finder" = "Finderで表示";
+"retranscribe.close" = "閉じる";
+"retranscribe.error" = "エラー発生";
+"retranscribe.retry" = "再試行";
+
+// MARK: - Settings Language
+"settings.app_language" = "アプリの言語";
+"settings.restart_hint" = "完全に適用するにはアプリを再起動してください";

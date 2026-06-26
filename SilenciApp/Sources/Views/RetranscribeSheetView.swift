@@ -32,7 +32,7 @@ struct RetranscribeSheetView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("자막 재생성")
+                Text(L10n.tr("retranscribe.title"))
                     .font(.headline)
                 Spacer()
                 if case .running = state {
@@ -83,7 +83,7 @@ struct RetranscribeSheetView: View {
             HStack(spacing: 6) {
                 Image(systemName: "doc.text")
                     .foregroundStyle(.cyan)
-                Text("입력")
+                Text(L10n.tr("retranscribe.input"))
                     .font(.subheadline.bold())
                     .foregroundStyle(.secondary)
                 Text(inputURL.lastPathComponent)
@@ -97,7 +97,7 @@ struct RetranscribeSheetView: View {
             HStack(spacing: 6) {
                 Image(systemName: "square.and.arrow.down")
                     .foregroundStyle(.cyan)
-                Text("저장")
+                Text(L10n.tr("retranscribe.output"))
                     .font(.subheadline.bold())
                     .foregroundStyle(.secondary)
                 Text(effectiveOutputURL.lastPathComponent)
@@ -105,7 +105,7 @@ struct RetranscribeSheetView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer()
-                Button("변경") {
+                Button(L10n.tr("retranscribe.change")) {
                     chooseOutputPath()
                 }
                 .font(.subheadline)
@@ -119,7 +119,7 @@ struct RetranscribeSheetView: View {
 
             // Language picker
             VStack(alignment: .leading, spacing: 4) {
-                Text("언어")
+                Text(L10n.tr("retranscribe.language"))
                     .font(.subheadline.bold())
                     .foregroundStyle(.secondary)
                 Picker("", selection: $language) {
@@ -133,7 +133,7 @@ struct RetranscribeSheetView: View {
 
             // ASR model picker
             VStack(alignment: .leading, spacing: 4) {
-                Text("AI 모델")
+                Text(L10n.tr("retranscribe.ai_model"))
                     .font(.subheadline.bold())
                     .foregroundStyle(.secondary)
                 Picker("", selection: $asrModel) {
@@ -146,13 +146,13 @@ struct RetranscribeSheetView: View {
             .padding(.horizontal)
 
             // iTT export toggle
-            Toggle("iTT 캡션도 함께 생성", isOn: $exportITT)
+            Toggle(L10n.tr("retranscribe.export_itt"), isOn: $exportITT)
                 .padding(.horizontal)
 
             // Start button
             HStack {
                 Spacer()
-                Button("자막 재생성 시작") {
+                Button(L10n.tr("retranscribe.start")) {
                     startRetranscribe()
                 }
                 .buttonStyle(.borderedProminent)
@@ -173,7 +173,7 @@ struct RetranscribeSheetView: View {
             ProgressView()
                 .scaleEffect(1.3)
 
-            Text("자막 재생성 중…")
+            Text(L10n.tr("retranscribe.in_progress"))
                 .font(.headline)
 
             Text(progressDetail)
@@ -186,7 +186,7 @@ struct RetranscribeSheetView: View {
             Button(role: .destructive) {
                 cancelRetranscribe()
             } label: {
-                Label("취소", systemImage: "xmark.circle")
+                Label(L10n.tr("retranscribe.cancel"), systemImage: "xmark.circle")
             }
             .buttonStyle(.bordered)
 
@@ -208,7 +208,7 @@ struct RetranscribeSheetView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.green)
 
-            Text("완료!")
+            Text(L10n.tr("retranscribe.done"))
                 .font(.headline)
 
             Text(URL(fileURLWithPath: path).lastPathComponent)
@@ -216,13 +216,13 @@ struct RetranscribeSheetView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
-                Button("Finder에서 보기") {
+                Button(L10n.tr("retranscribe.show_in_finder")) {
                     NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.cyan)
 
-                Button("닫기") {
+                Button(L10n.tr("retranscribe.close")) {
                     onDismiss()
                 }
                 .buttonStyle(.bordered)
@@ -244,7 +244,7 @@ struct RetranscribeSheetView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.orange)
 
-            Text("오류 발생")
+            Text(L10n.tr("retranscribe.error"))
                 .font(.headline)
 
             Text(message)
@@ -253,13 +253,13 @@ struct RetranscribeSheetView: View {
                 .multilineTextAlignment(.center)
 
             HStack(spacing: 12) {
-                Button("다시 시도") {
+                Button(L10n.tr("retranscribe.retry")) {
                     state = .idle
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.cyan)
 
-                Button("닫기") {
+                Button(L10n.tr("retranscribe.close")) {
                     onDismiss()
                 }
                 .buttonStyle(.bordered)

@@ -37,62 +37,31 @@ enum L10n {
         }
     }
 
-    /// The resource bundle containing Localizable.strings.
-    private static let baseBundle: Bundle = {
-        let bundleName = "SilenciApp_SilenciApp"
-
-        // 1. Next to the executable (Contents/MacOS/)
-        let executableURL = Bundle.main.bundleURL
-        if let b = Bundle(url: executableURL.appendingPathComponent("\(bundleName).bundle")) {
-            return b
-        }
-
-        // 2. In Resources (Contents/Resources/)
-        if let resourceURL = Bundle.main.resourceURL,
-           let b = Bundle(url: resourceURL.appendingPathComponent("\(bundleName).bundle")) {
-            return b
-        }
-
-        // 3. In the app bundle root
-        if let b = Bundle(url: Bundle.main.bundleURL.appendingPathComponent("Contents/Resources/\(bundleName).bundle")) {
-            return b
-        }
-
-        // 4. Two levels up from executable (Contents/MacOS/../../Resources/)
-        let twoUp = executableURL.deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("Resources/\(bundleName).bundle")
-        if let b = Bundle(path: twoUp.path) {
-            return b
-        }
-
-        // 5. Fallback: use main bundle
-        print("[L10n] ⚠️ Resource bundle not found — falling back to Bundle.main")
-        return Bundle.main
-    }()
-
     /// Cached language-specific bundle.
     nonisolated(unsafe) private static var _overrideBundle: Bundle?
 
     /// The effective bundle for the current language setting.
+    ///
+    /// - system: Bundle.main을 그대로 사용 — macOS가 CFBundleLocalizations 목록에서
+    ///   사용자 시스템 언어와 가장 잘 맞는 .lproj를 자동 선택함.
+    /// - 특정 언어: Bundle.main.resourceURL 아래의 {lang}.lproj 번들을 직접 사용.
     private static var bundle: Bundle {
         if let cached = _overrideBundle { return cached }
 
         let lang = currentLanguage
         if lang == .system {
-            _overrideBundle = baseBundle
-            return baseBundle
+            _overrideBundle = Bundle.main
+            return Bundle.main
         }
 
-        // Find the .lproj for the specified language
-        if let path = baseBundle.path(forResource: lang.rawValue, ofType: "lproj"),
+        if let path = Bundle.main.path(forResource: lang.rawValue, ofType: "lproj"),
            let b = Bundle(path: path) {
             _overrideBundle = b
             return b
         }
 
-        // Fallback
-        _overrideBundle = baseBundle
-        return baseBundle
+        _overrideBundle = Bundle.main
+        return Bundle.main
     }
 
     static func tr(_ key: String) -> String {

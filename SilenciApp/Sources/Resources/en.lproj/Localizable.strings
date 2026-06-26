@@ -103,3 +103,27 @@
 // MARK: - Import FCPXML
 "toolbar.import_fcpxml" = "Import FCPXML";
 "toolbar.import_fcpxml_message" = "Select an edited FCPXML file to re-transcribe";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "Drop FCPXML file here";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "Retranscribe";
+"retranscribe.input" = "Input";
+"retranscribe.output" = "Output";
+"retranscribe.change" = "Change";
+"retranscribe.language" = "Language";
+"retranscribe.ai_model" = "AI Model";
+"retranscribe.export_itt" = "Also export iTT captions";
+"retranscribe.start" = "Start Retranscription";
+"retranscribe.in_progress" = "Retranscribing…";
+"retranscribe.cancel" = "Cancel";
+"retranscribe.done" = "Done!";
+"retranscribe.show_in_finder" = "Show in Finder";
+"retranscribe.close" = "Close";
+"retranscribe.error" = "Error";
+"retranscribe.retry" = "Retry";
+
+// MARK: - Settings Language
+"settings.app_language" = "App Language";
+"settings.restart_hint" = "Restart the app to fully apply changes";

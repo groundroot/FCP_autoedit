@@ -41,7 +41,7 @@ struct SilenciApp: App {
         .commands {
             // File > Import FCPXML…  (⌘I)
             CommandGroup(after: .newItem) {
-                Button("FCPXML 가져오기…") {
+                Button(L10n.tr("toolbar.import_fcpxml") + "…") {
                     appActions.showImportPanel = true
                 }
                 .keyboardShortcut("i", modifiers: .command)

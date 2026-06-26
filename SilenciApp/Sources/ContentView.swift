@@ -51,7 +51,7 @@ struct ContentView: View {
                         Image(systemName: "doc.badge.arrow.up")
                             .font(.system(size: 52))
                             .foregroundStyle(.cyan)
-                        Text("FCPXML 파일을 여기에 놓으세요")
+                        Text(L10n.tr("preview.fcpxml_drop"))
                             .font(.title2.bold())
                             .foregroundStyle(.white)
                         Text(".fcpxmld  /  .fcpxml")
