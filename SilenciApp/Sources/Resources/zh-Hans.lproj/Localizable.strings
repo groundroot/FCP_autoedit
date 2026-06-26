@@ -132,3 +132,28 @@
 "editor.auto_scroll" = "自动滚动";
 "editor.empty_title" = "请打开并分析视频";
 "editor.empty_subtitle" = "删除文字将自动移除对应的视频片段";
+
+// MARK: - Subtitle Options
+"subtitle.section_title" = "字幕选项";
+"subtitle.density" = "字幕密度";
+"subtitle.density_hint" = "越低字幕越短越少，越高显示越多";
+"subtitle.lines" = "字幕行数";
+"subtitle.lines_one" = "单行";
+"subtitle.lines_two" = "双行";
+"subtitle.speakers" = "说话人数";
+"subtitle.speakers_auto" = "自动";
+"subtitle.speakers_1" = "1人";
+"subtitle.speakers_2" = "2人";
+"subtitle.speakers_3" = "3人";
+"subtitle.speakers_4" = "4人";
+
+// MARK: - Pro / Free
+"pro.free_badge" = "免费";
+"pro.pro_badge" = "PRO";
+"pro.upgrade_title" = "已达到1分钟限制";
+"pro.upgrade_body" = "免费版最多导出1分钟。升级至PRO可无限制导出。";
+"pro.upgrade_cta" = "升级到PRO";
+"pro.export_anyway" = "仅导出1分钟";
+"pro.cancel" = "取消";
+"pro.limit_banner" = "免费版 — 导出1分钟限制";
+"pro.upgrade_button" = "升级到PRO";

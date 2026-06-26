@@ -76,9 +76,18 @@ struct ExportService {
 
     // MARK: - SRT
 
+    /// Insert a newline at the midpoint of a subtitle chunk when subtitleLines == 2.
+    private static func applySubtitleLines(_ text: String, lines: Int) -> String {
+        guard lines == 2 else { return text }
+        let words = text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        guard words.count >= 2 else { return text }
+        let mid = words.count / 2
+        return words[..<mid].joined(separator: " ") + "\n" + words[mid...].joined(separator: " ")
+    }
+
     /// Generates an SRT subtitle string from kept segments.
     /// Timecodes are remapped to the edited timeline (gaps removed).
-    static func generateSRT(segments: [Segment], maxSubtitleChars: Int = 20) -> String {
+    static func generateSRT(segments: [Segment], maxSubtitleChars: Int = 20, subtitleLines: Int = 1) -> String {
         let kept = segments.filter(\.isKept)
         guard !kept.isEmpty else { return "" }
 
@@ -107,7 +116,8 @@ struct ExportService {
                     let chunkStart = offset + (clampedStart - segStartAbs)
                     let chunkEnd = offset + (clampedEnd - segStartAbs)
                     guard chunkEnd > chunkStart else { continue }
-                    entries.append("\(idx)\n\(srtTimecode(chunkStart)) --> \(srtTimecode(chunkEnd))\n\(chunk.text)")
+                    let chunkText = applySubtitleLines(chunk.text, lines: subtitleLines)
+                    entries.append("\(idx)\n\(srtTimecode(chunkStart)) --> \(srtTimecode(chunkEnd))\n\(chunkText)")
                     idx += 1
                 }
             }
@@ -130,7 +140,7 @@ struct ExportService {
     // MARK: - FCPXML
 
     /// Generates FCPXML v1.13 from kept segments, matching Python fcpxml.py output.
-    static func generateFCPXML(segments: [Segment], videoInfo: VideoInfo, videoURL: URL, fontSize: Int = 42, maxSubtitleChars: Int = 20) -> String {
+    static func generateFCPXML(segments: [Segment], videoInfo: VideoInfo, videoURL: URL, fontSize: Int = 42, maxSubtitleChars: Int = 20, subtitleLines: Int = 1) -> String {
         let kept = segments.filter(\.isKept)
         let fps = videoInfo.fps
         let (frameNum, frameDen, fpsCode) = getFrameInfo(fps: fps)
@@ -232,7 +242,8 @@ struct ExportService {
                     let chunkDur = subRational(chunkEnd, chunkStart)
                     guard chunkDur.0 > 0 else { continue }
 
-                    let escapedChunk = xmlEscape(wc.text)
+                    let chunkDisplayText = applySubtitleLines(wc.text, lines: subtitleLines)
+                    let escapedChunk = xmlEscape(chunkDisplayText)
 
                     xml += """
                                 <title ref="r3" lane="1" \

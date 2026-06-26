@@ -8,7 +8,9 @@ struct ContentView: View {
     @State private var videoModel = VideoPlayerModel()
     @State private var analysisService = AnalysisService()
     @State private var settings = AnalysisSettings()
-    @State private var isPro: Bool = false
+    @State private var proManager = ProManager()
+    @State private var showUpgradeAlert = false
+    @State private var pendingExportFormat: ExportFormat?
     @State private var bridgeStatus: String = ""
     @State private var isTesting = false
     @State private var showFindReplace = false
@@ -187,6 +189,23 @@ struct ContentView: View {
                 analysisService.startAnalysis(videoURL: url, environment: pythonEnv, settings: settings)
             }
         }
+        .alert(L10n.tr("pro.upgrade_title"), isPresented: $showUpgradeAlert) {
+            Button(L10n.tr("pro.upgrade_cta"), role: .none) {
+                // Phase 3: StoreKit purchase trigger goes here
+                // proManager.unlock()
+            }
+            Button(L10n.tr("pro.export_anyway"), role: .none) {
+                if let fmt = pendingExportFormat {
+                    performExport(format: fmt, clamp: true)
+                    pendingExportFormat = nil
+                }
+            }
+            Button(L10n.tr("pro.cancel"), role: .cancel) {
+                pendingExportFormat = nil
+            }
+        } message: {
+            Text(L10n.tr("pro.upgrade_body"))
+        }
         .onAppear { settings.load() }
     }
 
@@ -201,13 +220,13 @@ struct ContentView: View {
                     .foregroundStyle(.cyan)
                 Text("TEXT BASED EDIT")
                     .font(.system(.headline, design: .rounded, weight: .black))
-                Text(isPro ? "PRO" : "FREE")
+                Text(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"))
                     .font(.caption2.weight(.heavy))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
                     .background(
-                        isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
+                        proManager.isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
                         in: RoundedRectangle(cornerRadius: 4)
                     )
             }
@@ -255,6 +274,16 @@ struct ContentView: View {
                 } label: {
                     Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
                 }
+
+                // Show upgrade CTA when free limit exceeded
+                if !proManager.isPro && ProManager.keptDuration(analysisService.segments) > ProManager.freeLimitSeconds {
+                    Button {
+                        showUpgradeAlert = true
+                    } label: {
+                        Label(L10n.tr("pro.upgrade_button"), systemImage: "star.fill")
+                            .foregroundStyle(.orange)
+                    }
+                }
             }
 
             Button { showSettings.toggle() } label: {
@@ -282,6 +311,28 @@ struct ContentView: View {
                 )
             } else {
                 editorEmptyState
+            }
+        }
+        .overlay(alignment: .top) {
+            let keptDur = ProManager.keptDuration(analysisService.segments)
+            if !proManager.isPro && !analysisService.segments.isEmpty && keptDur > ProManager.freeLimitSeconds {
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                        .font(.caption2)
+                    Text(L10n.tr("pro.limit_banner"))
+                        .font(.caption2.weight(.medium))
+                    Spacer()
+                    Button(L10n.tr("pro.upgrade_button")) {
+                        showUpgradeAlert = true
+                    }
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.orange)
+                    .buttonStyle(.plain)
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.orange.opacity(0.85))
             }
         }
         .overlay(alignment: .bottom) {
@@ -409,25 +460,29 @@ struct ContentView: View {
     // MARK: - Export
 
     private func exportFile(format: ExportFormat) {
-        let panel = NSSavePanel()
-
-        switch format {
-        case .srt:
-            panel.allowedContentTypes = []
-        case .fcpxml:
-            panel.allowedContentTypes = []
-        case .itt:
-            panel.allowedContentTypes = []
-        }
-
-        let baseName: String
-        if let videoURL = videoModel.videoURL {
-            baseName = videoURL.deletingPathExtension().lastPathComponent
+        let keptDur = ProManager.keptDuration(analysisService.segments)
+        if !proManager.isPro && keptDur > ProManager.freeLimitSeconds {
+            pendingExportFormat = format
+            showUpgradeAlert = true
         } else {
-            baseName = "export"
+            performExport(format: format, clamp: false)
         }
-        panel.nameFieldStringValue = "\(baseName).\(format.fileExtension)"
+    }
+
+    private func performExport(format: ExportFormat, clamp: Bool) {
+        let exportSegments: [Segment]
+        if clamp {
+            exportSegments = proManager.clampedSegments(analysisService.segments).segments
+        } else {
+            exportSegments = analysisService.segments
+        }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = []
         panel.allowsOtherFileTypes = true
+
+        let baseName = videoModel.videoURL?.deletingPathExtension().lastPathComponent ?? "export"
+        panel.nameFieldStringValue = "\(baseName).\(format.fileExtension)"
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
@@ -435,23 +490,29 @@ struct ContentView: View {
             let content: String
             switch format {
             case .srt:
-                content = ExportService.generateSRT(segments: analysisService.segments, maxSubtitleChars: settings.maxSubtitleChars)
+                content = ExportService.generateSRT(
+                    segments: exportSegments,
+                    maxSubtitleChars: settings.maxSubtitleChars,
+                    subtitleLines: settings.subtitleLines
+                )
             case .fcpxml:
                 let info = analysisService.videoInfo ?? VideoInfo(
-                    fps: 30,
-                    width: 1920,
-                    height: 1080,
-                    duration: 0
+                    fps: 30, width: 1920, height: 1080, duration: 0
                 )
                 content = ExportService.generateFCPXML(
-                    segments: analysisService.segments,
+                    segments: exportSegments,
                     videoInfo: info,
                     videoURL: videoModel.videoURL ?? URL(fileURLWithPath: "/unknown"),
                     fontSize: settings.fontSizeExport,
-                    maxSubtitleChars: settings.maxSubtitleChars
+                    maxSubtitleChars: settings.maxSubtitleChars,
+                    subtitleLines: settings.subtitleLines
                 )
             case .itt:
-                content = ExportService.generateITT(segments: analysisService.segments, fps: analysisService.videoInfo?.fps ?? 24.0, maxSubtitleChars: settings.maxSubtitleChars)
+                content = ExportService.generateITT(
+                    segments: exportSegments,
+                    fps: analysisService.videoInfo?.fps ?? 24.0,
+                    maxSubtitleChars: settings.maxSubtitleChars
+                )
             }
 
             do {

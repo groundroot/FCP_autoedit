@@ -103,6 +103,8 @@ final class AnalysisService {
                     "speech_pad_ms": .int(settings?.speechPadMs ?? 100),
                     "max_segment_seconds": .double(settings?.maxSegmentSeconds ?? 8.0),
                     "max_subtitle_chars": .int(settings?.maxSubtitleChars ?? 20),
+                    "subtitle_lines": .int(settings?.subtitleLines ?? 1),
+                    "num_speakers": .int(settings?.numSpeakers ?? 0),
                 ],
                 timeout: 600,  // 10 min — long videos can take time
                 as: AnalyzeResponse.self
@@ -200,6 +202,8 @@ final class AnalysisService {
                     "asr_model": .string(settings?.asrModel.rawValue ?? "mlx-community/Qwen3-ASR-0.6B-8bit"),
                     "aligner_model": .string("mlx-community/Qwen3-ForcedAligner-0.6B-8bit"),
                     "max_segment_seconds": .double(settings?.maxSegmentSeconds ?? 8.0),
+                    "subtitle_lines": .int(settings?.subtitleLines ?? 1),
+                    "num_speakers": .int(settings?.numSpeakers ?? 0),
                 ],
                 timeout: 600,
                 as: AnalyzeResponse.self
@@ -242,6 +246,8 @@ final class AnalysisService {
         asrModel: String = "mlx-community/Qwen3-ASR-0.6B-8bit",
         fontSize: Int = 42,
         maxSubtitleChars: Int = 20,
+        subtitleLines: Int = 1,
+        numSpeakers: Int = 0,
         exportITT: Bool = false
     ) async throws -> RetranscribeResponse {
         let newBridge = PythonBridge()
@@ -284,6 +290,8 @@ final class AnalysisService {
                 "aligner_model": .string("mlx-community/Qwen3-ForcedAligner-0.6B-8bit"),
                 "font_size": .int(fontSize),
                 "max_subtitle_chars": .int(maxSubtitleChars),
+                "subtitle_lines": .int(subtitleLines),
+                "num_speakers": .int(numSpeakers),
                 "export_itt": .bool(exportITT),
             ],
             timeout: 600,

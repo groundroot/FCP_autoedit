@@ -128,23 +128,70 @@ struct AnalyzeDialogView: View {
                         }
 
                         HStack {
-                            Text(L10n.tr("dialog.max_chars"))
-                                .frame(width: 70, alignment: .leading)
-                            TextField("", value: $settings.maxSubtitleChars, format: .number)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 60)
-                            Text(L10n.tr("dialog.chars_unit"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
                             Text(L10n.tr("dialog.font"))
-                                .frame(width: 40, alignment: .leading)
+                                .frame(width: 70, alignment: .leading)
                             TextField("", value: $settings.fontSizeExport, format: .number)
                                 .textFieldStyle(.roundedBorder)
                                 .frame(width: 60)
                             Text("pt")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                    }
+
+                    Divider()
+
+                    // Subtitle Options
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(L10n.tr("subtitle.section_title"), systemImage: "text.bubble")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.cyan)
+
+                        // Density Slider
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack {
+                                Text(L10n.tr("subtitle.density"))
+                                    .frame(width: 70, alignment: .leading)
+                                Slider(value: Binding(
+                                    get: { Double(settings.maxSubtitleChars) },
+                                    set: { settings.maxSubtitleChars = Int($0) }
+                                ), in: 10...44, step: 2)
+                                Text("\(settings.maxSubtitleChars)")
+                                    .font(.caption.monospaced())
+                                    .frame(width: 28)
+                            }
+                            Text(L10n.tr("subtitle.density_hint"))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .padding(.leading, 74)
+                        }
+
+                        // Lines Picker
+                        HStack {
+                            Text(L10n.tr("subtitle.lines"))
+                                .frame(width: 70, alignment: .leading)
+                            Picker("", selection: $settings.subtitleLines) {
+                                Text(L10n.tr("subtitle.lines_one")).tag(1)
+                                Text(L10n.tr("subtitle.lines_two")).tag(2)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                        }
+
+                        // Speaker Count Picker
+                        HStack {
+                            Text(L10n.tr("subtitle.speakers"))
+                                .frame(width: 70, alignment: .leading)
+                            Picker("", selection: $settings.numSpeakers) {
+                                Text(L10n.tr("subtitle.speakers_auto")).tag(0)
+                                Text(L10n.tr("subtitle.speakers_1")).tag(1)
+                                Text(L10n.tr("subtitle.speakers_2")).tag(2)
+                                Text(L10n.tr("subtitle.speakers_3")).tag(3)
+                                Text(L10n.tr("subtitle.speakers_4")).tag(4)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
                         }
                     }
                 }
@@ -178,7 +225,7 @@ struct AnalyzeDialogView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         }
-        .frame(width: 440, height: 520)
+        .frame(width: 440, height: 640)
         .background(.ultraThinMaterial)
     }
 }

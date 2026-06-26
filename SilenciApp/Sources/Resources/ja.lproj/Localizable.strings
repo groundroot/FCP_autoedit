@@ -132,3 +132,28 @@
 "editor.auto_scroll" = "自動スクロール";
 "editor.empty_title" = "動画を開いて分析してください";
 "editor.empty_subtitle" = "テキストを削除すると対応する映像区間が自動的に削除されます";
+
+// MARK: - Subtitle Options
+"subtitle.section_title" = "字幕オプション";
+"subtitle.density" = "字幕の密度";
+"subtitle.density_hint" = "低いほど短く少なく、高いほど多く表示";
+"subtitle.lines" = "字幕の行数";
+"subtitle.lines_one" = "1行";
+"subtitle.lines_two" = "2行";
+"subtitle.speakers" = "話者数";
+"subtitle.speakers_auto" = "自動";
+"subtitle.speakers_1" = "1人";
+"subtitle.speakers_2" = "2人";
+"subtitle.speakers_3" = "3人";
+"subtitle.speakers_4" = "4人";
+
+// MARK: - Pro / Free
+"pro.free_badge" = "無料";
+"pro.pro_badge" = "PRO";
+"pro.upgrade_title" = "1分制限に達しました";
+"pro.upgrade_body" = "無料版は1分まで書き出せます。PROにアップグレードすると無制限で書き出せます。";
+"pro.upgrade_cta" = "PROにアップグレード";
+"pro.export_anyway" = "1分だけ書き出す";
+"pro.cancel" = "キャンセル";
+"pro.limit_banner" = "無料版 — 書き出し1分制限";
+"pro.upgrade_button" = "PROにアップグレード";

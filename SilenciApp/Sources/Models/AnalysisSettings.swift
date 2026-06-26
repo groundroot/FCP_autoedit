@@ -58,6 +58,12 @@ final class AnalysisSettings {
     /// Maximum characters per subtitle line.
     var maxSubtitleChars: Int = 20
 
+    /// Number of subtitle lines: 1 = single line, 2 = two lines.
+    var subtitleLines: Int = 1
+
+    /// Number of speakers for diarization. 0 = auto-detect.
+    var numSpeakers: Int = 0
+
     /// Subtitle font size for FCPXML export.
     var fontSizeExport: Int = 42
 
@@ -75,6 +81,8 @@ final class AnalysisSettings {
         d.set(speechPadMs, forKey: "sc_speechPadMs")
         d.set(maxSegmentSeconds, forKey: "sc_maxSegmentSeconds")
         d.set(maxSubtitleChars, forKey: "sc_maxSubtitleChars")
+        d.set(subtitleLines, forKey: "sc_subtitleLines")
+        d.set(numSpeakers, forKey: "sc_numSpeakers")
         d.set(fontSizeExport, forKey: "sc_fontSizeExport")
     }
 
@@ -88,6 +96,8 @@ final class AnalysisSettings {
         if d.object(forKey: "sc_speechPadMs") != nil { speechPadMs = d.integer(forKey: "sc_speechPadMs") }
         if d.object(forKey: "sc_maxSegmentSeconds") != nil { maxSegmentSeconds = d.double(forKey: "sc_maxSegmentSeconds") }
         if d.object(forKey: "sc_maxSubtitleChars") != nil { maxSubtitleChars = d.integer(forKey: "sc_maxSubtitleChars") }
+        if d.object(forKey: "sc_subtitleLines") != nil { subtitleLines = d.integer(forKey: "sc_subtitleLines") }
+        if d.object(forKey: "sc_numSpeakers") != nil { numSpeakers = d.integer(forKey: "sc_numSpeakers") }
         if d.object(forKey: "sc_fontSizeExport") != nil { fontSizeExport = d.integer(forKey: "sc_fontSizeExport") }
     }
 
@@ -101,6 +111,8 @@ final class AnalysisSettings {
         speechPadMs = 100
         maxSegmentSeconds = 8.0
         maxSubtitleChars = 20
+        subtitleLines = 1
+        numSpeakers = 0
         fontSizeExport = 42
         save()
     }

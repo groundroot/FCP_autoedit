@@ -132,3 +132,28 @@
 "editor.auto_scroll" = "Auto-scroll";
 "editor.empty_title" = "Open and analyze a video";
 "editor.empty_subtitle" = "Deleting text automatically removes the corresponding video segment";
+
+// MARK: - Subtitle Options
+"subtitle.section_title" = "Subtitle Options";
+"subtitle.density" = "Subtitle Density";
+"subtitle.density_hint" = "Lower = shorter & fewer subtitles, higher = more frequent";
+"subtitle.lines" = "Lines per Subtitle";
+"subtitle.lines_one" = "1 Line";
+"subtitle.lines_two" = "2 Lines";
+"subtitle.speakers" = "Speakers";
+"subtitle.speakers_auto" = "Auto";
+"subtitle.speakers_1" = "1";
+"subtitle.speakers_2" = "2";
+"subtitle.speakers_3" = "3";
+"subtitle.speakers_4" = "4";
+
+// MARK: - Pro / Free
+"pro.free_badge" = "FREE";
+"pro.pro_badge" = "PRO";
+"pro.upgrade_title" = "1-Minute Limit Reached";
+"pro.upgrade_body" = "The free version exports up to 1 minute. Upgrade to PRO for unlimited exports.";
+"pro.upgrade_cta" = "Upgrade to PRO";
+"pro.export_anyway" = "Export 1 min";
+"pro.cancel" = "Cancel";
+"pro.limit_banner" = "Free version — 1-minute export limit";
+"pro.upgrade_button" = "Upgrade to PRO";

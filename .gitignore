@@ -137,8 +137,9 @@ Icon
 # Cursor
 .cursor/
 
-# Models (large files)
+# Models (large files) — exclude AI model weights directories, not Swift source folders
 models/
+!SilenciApp/Sources/Models/
 *.bin
 *.safetensors
 *.gguf

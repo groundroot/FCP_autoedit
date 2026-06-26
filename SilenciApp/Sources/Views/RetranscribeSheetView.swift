@@ -14,6 +14,8 @@ struct RetranscribeSheetView: View {
     // Local settings for this retranscribe run
     @State private var language: String = "Korean"
     @State private var asrModel: AnalysisSettings.ASRModel = .small
+    @State private var subtitleLines: Int = 1
+    @State private var numSpeakers: Int = 0
     @State private var exportITT: Bool = true
     @State private var outputURL: URL?
     @State private var outputInitialized = false
@@ -65,6 +67,8 @@ struct RetranscribeSheetView: View {
         .onAppear {
             language = settings.language
             asrModel = settings.asrModel
+            subtitleLines = settings.subtitleLines
+            numSpeakers = settings.numSpeakers
             if !outputInitialized {
                 outputURL = defaultOutputURL
                 outputInitialized = true
@@ -140,6 +144,35 @@ struct RetranscribeSheetView: View {
                     ForEach(AnalysisSettings.ASRModel.allCases) { model in
                         Text(model.displayName).tag(model)
                     }
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(.horizontal)
+
+            // Subtitle lines picker
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.tr("subtitle.lines"))
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.secondary)
+                Picker("", selection: $subtitleLines) {
+                    Text(L10n.tr("subtitle.lines_one")).tag(1)
+                    Text(L10n.tr("subtitle.lines_two")).tag(2)
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(.horizontal)
+
+            // Speaker count picker
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.tr("subtitle.speakers"))
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.secondary)
+                Picker("", selection: $numSpeakers) {
+                    Text(L10n.tr("subtitle.speakers_auto")).tag(0)
+                    Text(L10n.tr("subtitle.speakers_1")).tag(1)
+                    Text(L10n.tr("subtitle.speakers_2")).tag(2)
+                    Text(L10n.tr("subtitle.speakers_3")).tag(3)
+                    Text(L10n.tr("subtitle.speakers_4")).tag(4)
                 }
                 .pickerStyle(.segmented)
             }
@@ -306,6 +339,8 @@ struct RetranscribeSheetView: View {
                     asrModel: asrModel.rawValue,
                     fontSize: settings.fontSizeExport,
                     maxSubtitleChars: settings.maxSubtitleChars,
+                    subtitleLines: subtitleLines,
+                    numSpeakers: numSpeakers,
                     exportITT: exportITT
                 )
                 await MainActor.run {

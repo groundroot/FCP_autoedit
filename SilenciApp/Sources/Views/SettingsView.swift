@@ -23,7 +23,7 @@ struct SettingsView: View {
             }
             .padding(20)
         }
-        .frame(width: 380, height: 570)
+        .frame(width: 380, height: 680)
         .background(.ultraThinMaterial)
     }
 
@@ -201,18 +201,53 @@ struct SettingsView: View {
                 .font(.headline)
                 .foregroundStyle(.cyan)
 
-            HStack {
-                Text(L10n.tr("settings.max_chars"))
-                    .frame(width: 80, alignment: .leading)
-                TextField("", value: $settings.maxSubtitleChars, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 70)
-                Text(L10n.tr("settings.chars_unit"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
+            // Density slider
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(L10n.tr("subtitle.density"))
+                        .frame(width: 80, alignment: .leading)
+                    Slider(value: Binding(
+                        get: { Double(settings.maxSubtitleChars) },
+                        set: { settings.maxSubtitleChars = Int($0) }
+                    ), in: 10...44, step: 2)
+                    Text("\(settings.maxSubtitleChars)")
+                        .font(.caption.monospaced())
+                        .frame(width: 28)
+                }
+                Text(L10n.tr("subtitle.density_hint"))
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, 84)
             }
 
+            // Lines picker
+            HStack {
+                Text(L10n.tr("subtitle.lines"))
+                    .frame(width: 80, alignment: .leading)
+                Picker("", selection: $settings.subtitleLines) {
+                    Text(L10n.tr("subtitle.lines_one")).tag(1)
+                    Text(L10n.tr("subtitle.lines_two")).tag(2)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            // Speaker count picker
+            HStack {
+                Text(L10n.tr("subtitle.speakers"))
+                    .frame(width: 80, alignment: .leading)
+                Picker("", selection: $settings.numSpeakers) {
+                    Text(L10n.tr("subtitle.speakers_auto")).tag(0)
+                    Text(L10n.tr("subtitle.speakers_1")).tag(1)
+                    Text(L10n.tr("subtitle.speakers_2")).tag(2)
+                    Text(L10n.tr("subtitle.speakers_3")).tag(3)
+                    Text(L10n.tr("subtitle.speakers_4")).tag(4)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            // Font size
             HStack {
                 Text(L10n.tr("settings.font_size"))
                     .frame(width: 80, alignment: .leading)

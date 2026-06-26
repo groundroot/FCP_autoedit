@@ -590,6 +590,7 @@ def retranscribe(
     export_itt: bool = False,
     language_code: str = "ko",
     num_speakers: Optional[int] = None,
+    subtitle_lines: int = 1,
     subtitle_style: str = "longform",
     variety_pause_threshold: float = 0.5,
     corrections_path: Optional[str | Path] = None,
@@ -856,6 +857,14 @@ def retranscribe(
                 )
         else:
             chunks = [{"text": " ".join(full_text_parts), "start": file_start, "end": file_end}]
+
+        # 두 줄 자막: 각 chunk 텍스트를 단어 중간에서 나눠 \n 삽입
+        if subtitle_lines == 2:
+            for ch in chunks:
+                words_in_chunk = ch["text"].split()
+                if len(words_in_chunk) >= 2:
+                    mid = len(words_in_chunk) // 2
+                    ch["text"] = " ".join(words_in_chunk[:mid]) + "\n" + " ".join(words_in_chunk[mid:])
 
         # 1순위: 사용자 교정 사전 (정확 치환 — 오인식어 → 정답어)
         if _corrections:

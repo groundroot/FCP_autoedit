@@ -772,6 +772,8 @@ def handle_retranscribe_to_file(params: dict) -> dict:
         aligner_model=params.get("aligner_model", "mlx-community/Qwen3-ForcedAligner-0.6B-8bit"),
         font_size=params.get("font_size", 42),
         max_subtitle_chars=params.get("max_subtitle_chars", 20),
+        subtitle_lines=params.get("subtitle_lines", 1),
+        num_speakers=params.get("num_speakers", 0),
         export_itt=export_itt,
         on_progress=on_progress,
     )
