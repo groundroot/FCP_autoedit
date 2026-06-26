@@ -793,6 +793,109 @@ def handle_retranscribe_to_file(params: dict) -> dict:
     }
 
 
+def handle_render_mp4(params: dict) -> dict:
+    """Kept 세그먼트들을 ffmpeg으로 concat하여 MP4로 렌더링.
+
+    params:
+        video_path: str — 원본 영상 경로
+        segments: list — [{"start": float, "end": float}, ...] 유지할 구간
+        output_path: str — 출력 MP4 경로
+        video_codec: str (optional, default "libx264")
+        crf: int (optional, default 18)
+        audio_codec: str (optional, default "aac")
+
+    returns:
+        output_path: str
+        duration: float — 렌더링된 영상 총 길이(초)
+    """
+    import subprocess as _sp
+    import tempfile as _tempfile
+    import os as _os
+
+    video_path = params.get("video_path")
+    if not video_path:
+        raise ValueError("video_path is required")
+
+    output_path = params.get("output_path")
+    if not output_path:
+        raise ValueError("output_path is required")
+
+    segments = params.get("segments", [])
+    if not segments:
+        raise ValueError("segments list is empty — nothing to render")
+
+    video_codec = params.get("video_codec", "libx264")
+    crf = params.get("crf", 18)
+    audio_codec = params.get("audio_codec", "aac")
+
+    total = len(segments)
+    _progress("render_mp4", 0, f"렌더링 준비 중 ({total}개 구간)")
+
+    # Build ffmpeg filter_complex for concat
+    # Strategy: use trim + setpts + atrim + asetpts per segment, then concat
+    filter_parts = []
+    concat_v = []
+    concat_a = []
+
+    for i, seg in enumerate(segments):
+        start = float(seg["start"])
+        end = float(seg["end"])
+        dur = end - start
+        if dur <= 0:
+            continue
+        idx = len(concat_v)
+        filter_parts.append(
+            f"[0:v]trim=start={start:.6f}:end={end:.6f},setpts=PTS-STARTPTS[v{idx}];"
+            f"[0:a]atrim=start={start:.6f}:end={end:.6f},asetpts=PTS-STARTPTS[a{idx}]"
+        )
+        concat_v.append(f"[v{idx}]")
+        concat_a.append(f"[a{idx}]")
+
+    n = len(concat_v)
+    if n == 0:
+        raise ValueError("No valid segments after filtering")
+
+    filter_complex = ";".join(filter_parts)
+    filter_complex += f";{''.join(concat_v)}{''.join(concat_a)}concat=n={n}:v=1:a=1[outv][outa]"
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(video_path),
+        "-filter_complex", filter_complex,
+        "-map", "[outv]",
+        "-map", "[outa]",
+        "-c:v", video_codec,
+        "-crf", str(crf),
+        "-preset", "fast",
+        "-c:a", audio_codec,
+        "-b:a", "192k",
+        "-movflags", "+faststart",
+        str(output_path),
+    ]
+
+    _progress("render_mp4", 10, "ffmpeg 렌더링 시작…")
+
+    try:
+        result = _sp.run(cmd, capture_output=True, text=True, check=True)
+    except _sp.CalledProcessError as e:
+        raise RuntimeError(f"ffmpeg 실패: {e.stderr[-800:]}")
+
+    _progress("render_mp4", 100, "렌더링 완료")
+
+    # Probe output duration
+    try:
+        probe = _sp.run(
+            ["ffprobe", "-v", "quiet", "-print_format", "json",
+             "-show_format", str(output_path)],
+            capture_output=True, text=True, check=True,
+        )
+        duration = float(json.loads(probe.stdout).get("format", {}).get("duration", 0))
+    except Exception:
+        duration = sum(float(s["end"]) - float(s["start"]) for s in segments if float(s["end"]) > float(s["start"]))
+
+    return {"output_path": str(output_path), "duration": duration}
+
+
 # ---------------------------------------------------------------------------
 # 메서드 라우터
 # ---------------------------------------------------------------------------
@@ -807,6 +910,7 @@ METHOD_TABLE: dict[str, Any] = {
     "export_fcpxml": handle_export_fcpxml,
     "export_srt": handle_export_srt,
     "export_itt": handle_export_itt,
+    "render_mp4": handle_render_mp4,
 }
 
 

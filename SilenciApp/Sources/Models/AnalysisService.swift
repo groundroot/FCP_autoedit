@@ -316,6 +316,77 @@ final class AnalysisService {
     @ObservationIgnored
     private nonisolated(unsafe) var retranscribeBridge: PythonBridge?
 
+    // MARK: - MP4 Render
+
+    /// Render kept segments to MP4 via ffmpeg.
+    func renderMP4(
+        videoURL: URL,
+        outputURL: URL,
+        segments: [Segment],
+        environment: PythonEnvironment? = nil
+    ) async throws -> MP4RenderResponse {
+        let newBridge = PythonBridge()
+        mp4Bridge = newBridge
+
+        if case .ready(let pythonPath, let modulePath) = environment?.state {
+            newBridge.pythonPath = pythonPath
+            newBridge.projectRoot = modulePath
+        } else {
+            let fm = FileManager.default
+            var dir = URL(fileURLWithPath: fm.currentDirectoryPath)
+            var projectRoot = dir.path
+            for _ in 0..<5 {
+                let candidate = dir.appendingPathComponent("silence_cutter").path
+                if fm.fileExists(atPath: candidate) {
+                    projectRoot = dir.path
+                    break
+                }
+                dir = dir.deletingLastPathComponent()
+            }
+            newBridge.projectRoot = projectRoot
+        }
+
+        defer {
+            newBridge.stop()
+            mp4Bridge = nil
+        }
+
+        try newBridge.start()
+
+        let segmentParams: [AnyCodableValue] = segments
+            .filter(\.isKept)
+            .compactMap { seg -> AnyCodableValue? in
+                guard seg.end > seg.start else { return nil }
+                return .object(["start": .double(seg.start), "end": .double(seg.end)])
+            }
+
+        let response = try await newBridge.call(
+            "render_mp4",
+            params: [
+                "video_path": .string(videoURL.path),
+                "output_path": .string(outputURL.path),
+                "segments": .array(segmentParams),
+            ],
+            timeout: 1800,
+            as: MP4RenderResponse.self
+        )
+
+        print("[AnalysisService] ✅ MP4 render complete: \(response.outputPath)")
+        return response
+    }
+
+    var mp4RenderProgress: ProgressInfo? {
+        mp4Bridge?.currentProgress
+    }
+
+    func cancelMP4Render() {
+        mp4Bridge?.stop()
+        mp4Bridge = nil
+    }
+
+    @ObservationIgnored
+    private nonisolated(unsafe) var mp4Bridge: PythonBridge?
+
     /// Split a segment at a given word index. Words before the index stay in the original,
     /// words from the index onward go to a new segment inserted after.
     /// If no words exist, splits at the midpoint of the time range.

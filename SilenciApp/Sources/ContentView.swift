@@ -11,6 +11,14 @@ struct ContentView: View {
     @State private var proManager = ProManager()
     @State private var showUpgradeAlert = false
     @State private var pendingExportFormat: ExportFormat?
+    @State private var mp4RenderState: MP4RenderState = .idle
+
+    enum MP4RenderState: Equatable {
+        case idle
+        case rendering(progress: String)
+        case done(path: String)
+        case error(String)
+    }
     @State private var bridgeStatus: String = ""
     @State private var isTesting = false
     @State private var showFindReplace = false
@@ -336,17 +344,56 @@ struct ContentView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if let err = analysisService.error {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow)
-                    Text(err).lineLimit(2)
+            VStack(spacing: 4) {
+                if let err = analysisService.error {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow)
+                        Text(err).lineLimit(2)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
                 }
-                .font(.caption)
-                .foregroundStyle(.red)
-                .padding(8)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                .padding(8)
+                switch mp4RenderState {
+                case .idle:
+                    EmptyView()
+                case .rendering(let msg):
+                    HStack(spacing: 6) {
+                        ProgressView().scaleEffect(0.7)
+                        Text(msg).font(.caption).lineLimit(1)
+                    }
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                case .done(let path):
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        Text(URL(fileURLWithPath: path).lastPathComponent).font(.caption).lineLimit(1)
+                        Button("Finder") { NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "") }
+                            .font(.caption)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.cyan)
+                        Button { mp4RenderState = .idle } label: {
+                            Image(systemName: "xmark").font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                case .error(let msg):
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        Text(msg).font(.caption).lineLimit(2)
+                        Button { mp4RenderState = .idle } label: {
+                            Image(systemName: "xmark").font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(8)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                }
             }
+            .padding(8)
         }
     }
 
@@ -487,8 +534,29 @@ struct ContentView: View {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
 
+            if format == .mp4 {
+                guard let videoURL = videoModel.videoURL else { return }
+                mp4RenderState = .rendering(progress: "렌더링 준비 중…")
+                Task {
+                    do {
+                        let result = try await analysisService.renderMP4(
+                            videoURL: videoURL,
+                            outputURL: url,
+                            segments: exportSegments,
+                            environment: pythonEnv
+                        )
+                        mp4RenderState = .done(path: result.outputPath)
+                    } catch {
+                        mp4RenderState = .error(error.localizedDescription)
+                    }
+                }
+                return
+            }
+
             let content: String
             switch format {
+            case .mp4:
+                return // handled above
             case .srt:
                 content = ExportService.generateSRT(
                     segments: exportSegments,

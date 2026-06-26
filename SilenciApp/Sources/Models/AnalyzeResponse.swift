@@ -34,3 +34,14 @@ struct RetranscribeResponse: Codable, Sendable {
         case ittPath = "itt_path"
     }
 }
+
+/// Response from the Python `render_mp4` JSON-RPC method.
+struct MP4RenderResponse: Codable, Sendable {
+    let outputPath: String
+    let duration: Double
+
+    enum CodingKeys: String, CodingKey {
+        case outputPath = "output_path"
+        case duration
+    }
+}
