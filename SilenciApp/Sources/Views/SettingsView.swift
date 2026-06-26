@@ -30,7 +30,7 @@ struct SettingsView: View {
             }
             .padding(20)
         }
-        .frame(width: 380, height: 780)
+        .frame(width: 420, height: 780)
         .background(.ultraThinMaterial)
         .sheet(isPresented: $showModelManager) {
             ModelDownloadView(
@@ -76,7 +76,8 @@ struct SettingsView: View {
                     Text(lang.displayName).tag(lang)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .onChange(of: appLanguage) { _, newValue in
                 L10n.currentLanguage = newValue
             }

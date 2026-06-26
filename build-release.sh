@@ -23,7 +23,7 @@ echo "=== Building SilenciApp release ==="
 # 1. Build release binary
 echo "[1/4] Building Swift release binary…"
 cd "$SWIFT_PKG"
-swift build -c release 2>&1
+swift build -c release --target SilenciApp 2>&1
 BINARY="$SWIFT_PKG/.build/release/SilenciApp"
 
 if [ ! -f "$BINARY" ]; then

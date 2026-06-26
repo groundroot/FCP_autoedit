@@ -30,6 +30,8 @@ struct ContentView: View {
     @State private var retranscribeItem: RetranscribeItem?
     @State private var retranscribeState: RetranscribeState = .idle
     @State private var isDroppingFCPXML = false
+    @State private var speakerNames: [Int: String] = [:]
+    @State private var hiddenSpeakers: Set<Int> = []
 
     struct RetranscribeItem: Identifiable {
         let id = UUID()
@@ -111,6 +113,93 @@ struct ContentView: View {
                 onDismiss: { retranscribeItem = nil }
             )
         }
+        .toolbar {
+            // ── 왼쪽: 브랜드 + 핵심 액션 ──────────────────────────
+            ToolbarItem(placement: .navigation) {
+                HStack(spacing: 6) {
+                    Image(systemName: "scissors")
+                        .font(.body.weight(.bold))
+                        .foregroundStyle(.cyan)
+                    Text("TEXT BASED EDIT")
+                        .font(.system(.subheadline, design: .rounded, weight: .black))
+                    Text(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"))
+                        .font(.caption2.weight(.heavy))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            proManager.isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
+                            in: RoundedRectangle(cornerRadius: 4)
+                        )
+                }
+            }
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    let panel = NSOpenPanel()
+                    panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .audio, .mp3, .mpeg4Audio, .wav, .aiff]
+                    panel.allowsMultipleSelection = false
+                    panel.begin { response in
+                        if response == .OK, let url = panel.url {
+                            videoModel.loadVideo(url: url)
+                            showAnalyzeDialog = true
+                        }
+                    }
+                } label: {
+                    Label(L10n.tr("toolbar.open"), systemImage: "folder")
+                }
+            }
+            ToolbarItem(placement: .navigation) {
+                Button { showAnalyzeDialog = true } label: {
+                    Label(L10n.tr("toolbar.analyze"), systemImage: "waveform.badge.magnifyingglass")
+                }
+                .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
+            }
+            ToolbarItem(placement: .navigation) {
+                Button { importFCPXML() } label: {
+                    Label(L10n.tr("toolbar.import_fcpxml"), systemImage: "doc.badge.arrow.up")
+                }
+                .disabled(analysisService.isAnalyzing)
+            }
+
+            // ── 오른쪽: 세그먼트 있을 때 조건부 ──────────────────
+            if !analysisService.segments.isEmpty {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showFindReplace.toggle() } label: {
+                        Label(L10n.tr("toolbar.find"), systemImage: "magnifyingglass")
+                    }
+                    .keyboardShortcut("f", modifiers: .command)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        ForEach(ExportFormat.allCases) { format in
+                            Button(format.displayName) { exportFile(format: format) }
+                        }
+                    } label: {
+                        Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
+                    }
+                }
+                if !proManager.isPro && ProManager.keptDuration(analysisService.segments) > ProManager.freeLimitSeconds {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { showUpgradeAlert = true } label: {
+                            Label(L10n.tr("pro.upgrade_button"), systemImage: "star.fill")
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                }
+            }
+
+            // ── 오른쪽: 항상 표시 ──────────────────────────────────
+            ToolbarItem(placement: .primaryAction) {
+                Button { showModelManager = true } label: {
+                    Label(L10n.tr("model.manage"), systemImage: "cpu")
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button { showSettings.toggle() } label: {
+                    Label(L10n.tr("toolbar.settings"), systemImage: "gearshape")
+                }
+            }
+        }
     }
 
     // MARK: - Setup Overlay
@@ -172,8 +261,6 @@ struct ContentView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            topToolbarView
-            Divider()
             HSplitView {
                 textEditorPanel
                     .frame(minWidth: 360)
@@ -184,11 +271,6 @@ struct ContentView: View {
                 Divider()
                 FindReplaceView(analysisService: analysisService, isVisible: $showFindReplace)
             }
-        }
-        .background {
-            Button("") { showFindReplace.toggle() }
-                .keyboardShortcut("f", modifiers: .command)
-                .hidden()
         }
         .sheet(isPresented: $showSettings) {
             SettingsView(
@@ -238,96 +320,6 @@ struct ContentView: View {
         .onAppear { settings.load() }
     }
 
-    // MARK: - Top Toolbar
-
-    private var topToolbarView: some View {
-        HStack(spacing: 10) {
-            // Brand
-            HStack(spacing: 6) {
-                Image(systemName: "scissors")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.cyan)
-                Text("TEXT BASED EDIT")
-                    .font(.system(.headline, design: .rounded, weight: .black))
-                Text(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"))
-                    .font(.caption2.weight(.heavy))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(
-                        proManager.isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
-                        in: RoundedRectangle(cornerRadius: 4)
-                    )
-            }
-
-            Divider().frame(height: 22).padding(.horizontal, 2)
-
-            // Open video
-            Button {
-                let panel = NSOpenPanel()
-                panel.allowedContentTypes = [.movie, .mpeg4Movie, .quickTimeMovie, .audio, .mp3, .mpeg4Audio, .wav, .aiff]
-                panel.allowsMultipleSelection = false
-                panel.begin { response in
-                    if response == .OK, let url = panel.url {
-                        videoModel.loadVideo(url: url)
-                        showAnalyzeDialog = true
-                    }
-                }
-            } label: {
-                Label(L10n.tr("toolbar.open"), systemImage: "folder")
-            }
-
-            // Analyze
-            Button { showAnalyzeDialog = true } label: {
-                Label(L10n.tr("toolbar.analyze"), systemImage: "waveform.badge.magnifyingglass")
-            }
-            .disabled(videoModel.videoURL == nil || analysisService.isAnalyzing)
-
-            // Import FCPXML (resub)
-            Button { importFCPXML() } label: {
-                Label(L10n.tr("toolbar.import_fcpxml"), systemImage: "doc.badge.arrow.up")
-            }
-            .disabled(analysisService.isAnalyzing)
-
-            Spacer()
-
-            if !analysisService.segments.isEmpty {
-                Button { showFindReplace.toggle() } label: {
-                    Label(L10n.tr("toolbar.find"), systemImage: "magnifyingglass")
-                }
-
-                Menu {
-                    ForEach(ExportFormat.allCases) { format in
-                        Button(format.displayName) { exportFile(format: format) }
-                    }
-                } label: {
-                    Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
-                }
-
-                // Show upgrade CTA when free limit exceeded
-                if !proManager.isPro && ProManager.keptDuration(analysisService.segments) > ProManager.freeLimitSeconds {
-                    Button {
-                        showUpgradeAlert = true
-                    } label: {
-                        Label(L10n.tr("pro.upgrade_button"), systemImage: "star.fill")
-                            .foregroundStyle(.orange)
-                    }
-                }
-            }
-
-            Button { showModelManager = true } label: {
-                Label(L10n.tr("model.manage"), systemImage: "cpu")
-            }
-
-            Button { showSettings.toggle() } label: {
-                Label(L10n.tr("toolbar.settings"), systemImage: "gearshape")
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(.bar)
-    }
-
     // MARK: - Text Editor Panel (left)
 
     private var textEditorPanel: some View {
@@ -340,7 +332,9 @@ struct ContentView: View {
                 TextBasedEditorView(
                     analysisService: analysisService,
                     currentTime: videoModel.currentTime,
-                    onSeek: { videoModel.seek(to: $0) }
+                    onSeek: { videoModel.seek(to: $0) },
+                    speakerNames: speakerNames,
+                    hiddenSpeakers: hiddenSpeakers
                 )
             } else {
                 editorEmptyState
@@ -443,10 +437,38 @@ struct ContentView: View {
 
     // MARK: - Video Panel (right)
 
+    private var currentSubtitleText: String? {
+        guard videoModel.player != nil else { return nil }
+        let t = videoModel.currentTime
+        return analysisService.segments.first { $0.isKept && t >= $0.start && t < $0.end }?.text
+    }
+
     private var videoPanel: some View {
         VStack(spacing: 0) {
-            VideoPreviewView(model: videoModel, onFCPXMLDrop: handleImportedURL)
-                .frame(maxHeight: .infinity)
+            VideoPreviewView(
+                model: videoModel,
+                onFCPXMLDrop: handleImportedURL,
+                subtitle: currentSubtitleText
+            )
+            .frame(maxHeight: .infinity)
+            Divider()
+            HStack(spacing: 10) {
+                Toggle(isOn: $videoModel.skipDiscardedSegments) {
+                    Label("편집 미리보기", systemImage: "scissors.badge.ellipsis")
+                        .font(.caption)
+                }
+                .toggleStyle(.checkbox)
+                .help("재생 중 삭제된 구간을 자동으로 건너뜀")
+                .disabled(analysisService.segments.isEmpty)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(.bar)
+            if !activeSpeakerIds.isEmpty {
+                Divider()
+                speakerPanel
+            }
             Divider()
             TimelineBarWrapper(
                 segments: analysisService.segments,
@@ -456,6 +478,52 @@ struct ContentView: View {
             )
             .frame(height: 56)
         }
+        .onChange(of: analysisService.segments.map(\.id)) { _, _ in
+            videoModel.segments = analysisService.segments
+            for id in activeSpeakerIds where speakerNames[id] == nil {
+                speakerNames[id] = "화자\(id + 1)"
+            }
+        }
+    }
+
+    private var activeSpeakerIds: [Int] {
+        Array(Set(analysisService.segments.compactMap(\.speakerId))).sorted()
+    }
+
+    private var speakerPanel: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(activeSpeakerIds, id: \.self) { spkId in
+                    let name = speakerNames[spkId] ?? "화자\(spkId + 1)"
+                    let isHidden = hiddenSpeakers.contains(spkId)
+                    let color = TextBasedEditorView.speakerColor(spkId)
+                    Button {
+                        if isHidden { hiddenSpeakers.remove(spkId) }
+                        else { hiddenSpeakers.insert(spkId) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Circle().fill(color).frame(width: 8, height: 8)
+                            Text(name).font(.caption.weight(.medium))
+                            Image(systemName: isHidden ? "eye.slash" : "eye")
+                                .font(.caption2)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            isHidden
+                                ? Color.secondary.opacity(0.15)
+                                : color.opacity(0.18),
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                        .foregroundStyle(isHidden ? .secondary : color)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+        }
+        .background(.bar)
     }
 
     // MARK: - Import FCPXML (Retranscribe to file)
@@ -542,11 +610,16 @@ struct ContentView: View {
     }
 
     private func performExport(format: ExportFormat, clamp: Bool) {
-        let exportSegments: [Segment]
+        let rawSegments: [Segment]
         if clamp {
-            exportSegments = proManager.clampedSegments(analysisService.segments).segments
+            rawSegments = proManager.clampedSegments(analysisService.segments).segments
         } else {
-            exportSegments = analysisService.segments
+            rawSegments = analysisService.segments
+        }
+        // hidden speaker 세그먼트는 내보내기에서 제외
+        let exportSegments: [Segment] = rawSegments.map { seg in
+            guard let spk = seg.speakerId, hiddenSpeakers.contains(spk) else { return seg }
+            var s = seg; s.isKept = false; return s
         }
 
         let panel = NSSavePanel()
@@ -605,6 +678,19 @@ struct ContentView: View {
                     segments: exportSegments,
                     fps: analysisService.videoInfo?.fps ?? 24.0,
                     maxSubtitleChars: settings.maxSubtitleChars
+                )
+            case .edl:
+                let fps = analysisService.videoInfo?.fps ?? 30.0
+                let base = videoModel.videoURL?.deletingPathExtension().lastPathComponent ?? "edit"
+                content = ExportService.generateEDL(segments: exportSegments, fps: fps, title: base)
+            case .premiereXml:
+                let info = analysisService.videoInfo ?? VideoInfo(fps: 30, width: 1920, height: 1080, duration: 0)
+                let base = videoModel.videoURL?.deletingPathExtension().lastPathComponent ?? "edit"
+                content = ExportService.generatePremiereXML(
+                    segments: exportSegments,
+                    videoInfo: info,
+                    videoURL: videoModel.videoURL ?? URL(fileURLWithPath: "/unknown"),
+                    title: base
                 )
             }
 

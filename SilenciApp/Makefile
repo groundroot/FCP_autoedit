@@ -24,7 +24,7 @@ all: bundle
 
 ## ── 릴리즈 빌드 ───────────────────────────────────────────────────────
 build:
-	swift build -c release
+	swift build -c release --target SilenciApp
 
 ## ── 디버그 빌드 ───────────────────────────────────────────────────────
 build-debug:

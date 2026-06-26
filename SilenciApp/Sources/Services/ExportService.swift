@@ -98,7 +98,7 @@ struct ExportService {
         for segment in kept {
             let segDur = segment.end - segment.start
             let chunks = segment.words.isEmpty
-                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: 0, segEnd: segDur)
+                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: segment.start, segEnd: segment.end)
                 : subtitleChunksFromWords(segment.words.filter(\.isKept), maxChars: maxSubtitleChars)
 
             if chunks.isEmpty {
@@ -353,7 +353,7 @@ struct ExportService {
         for segment in kept {
             let segDur = segment.end - segment.start
             let chunks = segment.words.isEmpty
-                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: 0, segEnd: segDur)
+                ? subtitleChunksFromText(segment.exportText, maxChars: maxSubtitleChars, segStart: segment.start, segEnd: segment.end)
                 : subtitleChunksFromWords(segment.words.filter(\.isKept), maxChars: maxSubtitleChars)
 
             if chunks.isEmpty {
@@ -512,5 +512,152 @@ struct ExportService {
         if sentenceEndPattern.firstMatch(in: text, range: range) != nil { return true }
         if clauseEndPattern.firstMatch(in: text, range: range) != nil { return true }
         return false
+    }
+
+    // MARK: - EDL (CMX3600) — Premiere Pro, DaVinci Resolve
+
+    /// Generates a CMX3600 EDL.
+    /// Source TC = original video timecodes; Record TC = edited timeline.
+    static func generateEDL(segments: [Segment], fps: Double = 30.0, title: String = "SilenciApp Edit") -> String {
+        let kept = segments.filter(\.isKept)
+        guard !kept.isEmpty else { return "" }
+
+        let fpsInt = Int(round(fps))
+        var lines: [String] = [
+            "TITLE: \(title)",
+            "FCM: NON-DROP FRAME",
+            "",
+        ]
+
+        var recIn: Double = 0
+        for (i, seg) in kept.enumerated() {
+            let eventNum = String(format: "%03d", i + 1)
+            let srcIn  = edlTC(seg.start, fps: fpsInt)
+            let srcOut = edlTC(seg.end,   fps: fpsInt)
+            let recOut = recIn + (seg.end - seg.start)
+            let recInTC  = edlTC(recIn,  fps: fpsInt)
+            let recOutTC = edlTC(recOut, fps: fpsInt)
+            lines.append("\(eventNum)  AX       AA/V  C        \(srcIn) \(srcOut) \(recInTC) \(recOutTC)")
+            recIn = recOut
+        }
+
+        return lines.joined(separator: "\n")
+    }
+
+    private static func edlTC(_ seconds: Double, fps: Int) -> String {
+        let total = Int(round(seconds * Double(fps)))
+        let ff = total % fps
+        let ss = (total / fps) % 60
+        let mm = (total / fps / 60) % 60
+        let hh = total / fps / 3600
+        return String(format: "%02d:%02d:%02d:%02d", hh, mm, ss, ff)
+    }
+
+    // MARK: - FCP7 XML (xmeml v5) — Premiere Pro
+
+    /// Generates Final Cut Pro 7 / xmeml v5 XML for Premiere Pro import.
+    static func generatePremiereXML(
+        segments: [Segment],
+        videoInfo: VideoInfo,
+        videoURL: URL,
+        title: String = "SilenciApp Edit"
+    ) -> String {
+        let kept = segments.filter(\.isKept)
+        guard !kept.isEmpty else { return "" }
+
+        let fps = videoInfo.fps
+        let fpsInt = Int(round(fps))
+        let ntsc = abs(fps - 29.97) < 0.05 || abs(fps - 23.976) < 0.05 || abs(fps - 59.94) < 0.05
+        let ntscStr = ntsc ? "TRUE" : "FALSE"
+
+        func fr(_ s: Double) -> Int { Int(round(s * fps)) }
+
+        let totalSrcFr = fr(videoInfo.duration)
+        let videoFileName = xmlEscape(videoURL.lastPathComponent)
+
+        var videoClips = ""
+        var audioClips = ""
+        var recIn = 0
+        for (i, seg) in kept.enumerated() {
+            let n = i + 1
+            let dur  = fr(seg.end - seg.start)
+            let sIn  = fr(seg.start)
+            let sOut = fr(seg.end)
+            let rOut = recIn + dur
+            let fileRef = i == 0
+                ? """
+                      <file id="file-1">
+                        <name>\(videoFileName)</name>
+                        <pathurl>\(xmlEscape(videoURL.absoluteString))</pathurl>
+                        <rate><timebase>\(fpsInt)</timebase><ntsc>\(ntscStr)</ntsc></rate>
+                        <duration>\(totalSrcFr)</duration>
+                        <media>
+                          <video><track><enabled>TRUE</enabled><locked>FALSE</locked></track></video>
+                          <audio><track><enabled>TRUE</enabled><locked>FALSE</locked><outputchannelindex>1</outputchannelindex></track></audio>
+                        </media>
+                      </file>
+                """
+                : "          <file id=\"file-1\"/>"
+
+            videoClips += """
+                  <clipitem id="v\(n)">
+                    <name>\(videoFileName)</name>
+                    <duration>\(dur)</duration>
+                    <rate><timebase>\(fpsInt)</timebase><ntsc>\(ntscStr)</ntsc></rate>
+                    <start>\(recIn)</start>
+                    <end>\(rOut)</end>
+                    <in>\(sIn)</in>
+                    <out>\(sOut)</out>
+            \(fileRef)
+                  </clipitem>\n
+            """
+            audioClips += """
+                  <clipitem id="a\(n)">
+                    <name>\(videoFileName)</name>
+                    <duration>\(dur)</duration>
+                    <rate><timebase>\(fpsInt)</timebase><ntsc>\(ntscStr)</ntsc></rate>
+                    <start>\(recIn)</start>
+                    <end>\(rOut)</end>
+                    <in>\(sIn)</in>
+                    <out>\(sOut)</out>
+                    <file id="file-1"/>
+                  </clipitem>\n
+            """
+            recIn = rOut
+        }
+
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE xmeml>
+        <xmeml version="5">
+          <sequence id="sequence-1">
+            <name>\(xmlEscape(title))</name>
+            <duration>\(recIn)</duration>
+            <rate><timebase>\(fpsInt)</timebase><ntsc>\(ntscStr)</ntsc></rate>
+            <in>-1</in>
+            <out>-1</out>
+            <media>
+              <video>
+                <format>
+                  <samplecharacteristics>
+                    <rate><timebase>\(fpsInt)</timebase><ntsc>\(ntscStr)</ntsc></rate>
+                    <width>\(videoInfo.width)</width>
+                    <height>\(videoInfo.height)</height>
+                    <anamorphic>FALSE</anamorphic>
+                    <pixelaspectratio>square</pixelaspectratio>
+                    <fielddominance>none</fielddominance>
+                  </samplecharacteristics>
+                </format>
+                <track>
+        \(videoClips)        </track>
+              </video>
+              <audio>
+                <track>
+        \(audioClips)        </track>
+              </audio>
+            </media>
+          </sequence>
+        </xmeml>
+        """
     }
 }

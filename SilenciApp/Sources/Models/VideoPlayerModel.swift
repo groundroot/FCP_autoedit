@@ -23,6 +23,13 @@ final class VideoPlayerModel {
     /// Whether the player is currently playing.
     private(set) var isPlaying: Bool = false
 
+    /// Segments mirror — kept in sync by ContentView.
+    /// Used to skip discarded segments during playback.
+    var segments: [Segment] = []
+
+    /// When true, playback skips over discarded (isKept == false) segments automatically.
+    var skipDiscardedSegments = false
+
     // MARK: - Private
 
     /// Token returned by addPeriodicTimeObserver — must be removed before deallocation.
@@ -114,7 +121,22 @@ final class VideoPlayerModel {
                 guard let self else { return }
                 self.currentTime = CMTimeGetSeconds(cmTime)
                 self.isPlaying = self.player?.rate != 0
+                if self.skipDiscardedSegments && self.isPlaying {
+                    self.skipIfDiscarded()
+                }
             }
+        }
+    }
+
+    private func skipIfDiscarded() {
+        guard !isSeeking else { return }
+        let t = currentTime
+        guard let discarded = segments.first(where: { !$0.isKept && t >= $0.start && t < $0.end }) else { return }
+        if let next = segments.first(where: { $0.isKept && $0.start >= discarded.end }) {
+            seek(to: next.start)
+        } else {
+            player?.pause()
+            isPlaying = false
         }
     }
 

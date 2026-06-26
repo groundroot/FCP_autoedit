@@ -325,6 +325,23 @@ def handle_analyze(params: dict) -> dict:
     # 세그먼트 경계에서 분리된 조사를 이전 세그먼트로 병합
     results = merge_orphan_josa(results)
 
+    # Pass 3: (optional) Speaker diarization — audio_path.unlink() 전에 실행
+    diar_segs = []
+    _num_speakers = params.get("num_speakers", 0)
+    if _num_speakers != 1 and len(results) >= 2:
+        try:
+            from .diarize import diarize_audio as _diarize
+            _progress("analyze", 85, "화자 분리 중 (resemblyzer)…")
+            diar_segs = _diarize(
+                str(audio_path),
+                num_speakers=_num_speakers if _num_speakers > 1 else None,
+            )
+            _n_spk = len({s[2] for s in diar_segs}) if diar_segs else 0
+            _progress("analyze", 93, f"화자 {_n_spk}명 감지됨")
+        except Exception as _exc:
+            import sys as _sys
+            print(f"[diarize] 화자 분리 건너뜀: {_exc}", file=_sys.stderr)
+
     try:
         audio_path.unlink()
     except OSError:
@@ -332,12 +349,19 @@ def handle_analyze(params: dict) -> dict:
 
     _progress("analyze", 100, f"분석 완료: {len(results)}개 구간")
 
+    def _spk_id(start: float, end: float):
+        if not diar_segs:
+            return None
+        from .diarize import assign_speaker
+        return assign_speaker(start, end, diar_segs)
+
     return {
         "segments": [
             {
                 "seg_start": s.seg_start,
                 "seg_end": s.seg_end,
                 "text": s.text,
+                "speaker_id": _spk_id(s.seg_start, s.seg_end),
                 "words": [
                     {"text": w.text, "start": w.start, "end": w.end}
                     for w in s.words

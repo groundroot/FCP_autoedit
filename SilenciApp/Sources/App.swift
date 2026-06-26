@@ -10,7 +10,12 @@ private let isTestBridgeMode = CommandLine.arguments.contains("--test-bridge")
 /// When true, the app runs a headless analyze round-trip and exits.
 private let isTestAnalyzeMode = CommandLine.arguments.contains("--test-analyze")
 
-@main
+/// Public entry point callable from the executable target without exposing the App struct.
+@MainActor
+public func launchSilenciApp() {
+    SilenciApp.main()
+}
+
 struct SilenciApp: App {
     @NSApplicationDelegateAdaptor(SilenciAppDelegate.self) var appDelegate
     @State private var pythonEnv = PythonEnvironment()

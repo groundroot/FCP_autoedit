@@ -17,6 +17,8 @@ struct Segment: Identifiable, Codable, Sendable {
     var isKept: Bool
     /// Word-level timing from ASR
     var words: [Word]
+    /// Speaker ID (0-based). nil = diarization not run.
+    var speakerId: Int?
 
     /// Timeline start time (for edited FCPXML where clip order differs from source order).
     /// nil when segments come from a fresh analysis (source order == timeline order).
@@ -40,13 +42,14 @@ struct Segment: Identifiable, Codable, Sendable {
         return keptText
     }
 
-    init(id: UUID = UUID(), start: Double, end: Double, text: String, isKept: Bool = true, words: [Word] = [], timelineStart: Double? = nil, timelineEnd: Double? = nil) {
+    init(id: UUID = UUID(), start: Double, end: Double, text: String, isKept: Bool = true, words: [Word] = [], speakerId: Int? = nil, timelineStart: Double? = nil, timelineEnd: Double? = nil) {
         self.id = id
         self.start = start
         self.end = end
         self.text = text
         self.isKept = isKept
         self.words = words
+        self.speakerId = speakerId
         self.timelineStart = timelineStart
         self.timelineEnd = timelineEnd
     }
@@ -58,6 +61,7 @@ struct Segment: Identifiable, Codable, Sendable {
         case end = "seg_end"
         case text
         case words
+        case speakerId = "speaker_id"
         case timelineStart = "timeline_start"
         case timelineEnd = "timeline_end"
     }
@@ -68,6 +72,7 @@ struct Segment: Identifiable, Codable, Sendable {
         self.end = try container.decode(Double.self, forKey: .end)
         self.text = try container.decode(String.self, forKey: .text)
         self.words = try container.decodeIfPresent([Word].self, forKey: .words) ?? []
+        self.speakerId = try container.decodeIfPresent(Int.self, forKey: .speakerId)
         self.timelineStart = try container.decodeIfPresent(Double.self, forKey: .timelineStart)
         self.timelineEnd = try container.decodeIfPresent(Double.self, forKey: .timelineEnd)
         // Swift-side defaults — not present in Python JSON

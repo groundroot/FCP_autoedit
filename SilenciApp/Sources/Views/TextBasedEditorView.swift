@@ -9,6 +9,8 @@ struct TextBasedEditorView: View {
     var analysisService: AnalysisService
     var currentTime: Double
     var onSeek: (Double) -> Void
+    var speakerNames: [Int: String] = [:]
+    var hiddenSpeakers: Set<Int> = []
 
     @State private var autoScroll = true
     @State private var lastCurrentWordID: String? = nil
@@ -74,17 +76,27 @@ struct TextBasedEditorView: View {
         let segs = analysisService.segments
         if si < segs.count, wi < segs[si].words.count {
             let word = segs[si].words[wi]
+            let spkId = segs[si].speakerId
+            let isSpeakerHidden = spkId.map { hiddenSpeakers.contains($0) } ?? false
             WordTokenView(
                 text: word.text,
-                isKept: word.isKept,
+                isKept: word.isKept && !isSpeakerHidden,
                 isCurrent: currentTime >= word.start && currentTime < word.end,
+                speakerColor: spkId.map { Self.speakerColor($0) },
                 onTap: {
+                    guard !isSpeakerHidden else { return }
                     onSeek(word.start)
                     analysisService.segments[si].words[wi].isKept.toggle()
                 }
             )
             .id(id)
         }
+    }
+
+    static func speakerColor(_ id: Int) -> Color {
+        let palette: [Color] = [.cyan, Color(red: 1, green: 0.85, blue: 0.2),
+                                Color(red: 0.8, green: 0.5, blue: 1.0), .orange, .green, .pink]
+        return palette[id % palette.count]
     }
 
     // MARK: - Flat item list
@@ -131,22 +143,30 @@ private struct WordTokenView: View {
     let text: String
     let isKept: Bool
     let isCurrent: Bool
+    let speakerColor: Color?
     let onTap: () -> Void
 
     var body: some View {
-        Text(text)
-            .font(.title3)
-            .fontWeight(isCurrent ? .semibold : .regular)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 4)
-            .background(bgView)
-            .clipShape(RoundedRectangle(cornerRadius: 5))
-            .strikethrough(!isKept, color: .red.opacity(0.75))
-            .foregroundStyle(fgColor)
-            .opacity(isKept ? 1.0 : 0.45)
-            .onTapGesture { onTap() }
-            .animation(.easeInOut(duration: 0.1), value: isCurrent)
-            .animation(.easeInOut(duration: 0.12), value: isKept)
+        HStack(spacing: 2) {
+            if let color = speakerColor {
+                Circle()
+                    .fill(color.opacity(0.7))
+                    .frame(width: 5, height: 5)
+            }
+            Text(text)
+                .font(.title3)
+                .fontWeight(isCurrent ? .semibold : .regular)
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
+        .background(bgView)
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .strikethrough(!isKept, color: .red.opacity(0.75))
+        .foregroundStyle(fgColor)
+        .opacity(isKept ? 1.0 : 0.45)
+        .onTapGesture { onTap() }
+        .animation(.easeInOut(duration: 0.1), value: isCurrent)
+        .animation(.easeInOut(duration: 0.12), value: isKept)
     }
 
     @ViewBuilder private var bgView: some View {

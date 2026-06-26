@@ -27,6 +27,8 @@ struct VideoPreviewView: View {
     @Bindable var model: VideoPlayerModel
     /// .fcpxmld / .fcpxml 파일이 드롭됐을 때 ContentView로 위임하는 콜백.
     var onFCPXMLDrop: ((URL) -> Void)? = nil
+    /// 현재 재생 위치의 자막 텍스트. nil이면 오버레이 숨김.
+    var subtitle: String? = nil
 
     /// Accepted video file extensions for drag-and-drop.
     private static let videoExtensions: Set<String> = [
@@ -39,6 +41,24 @@ struct VideoPreviewView: View {
                 PlayerNSView(player: player)
             } else {
                 placeholderView
+            }
+
+            // Subtitle overlay
+            if let text = subtitle, !text.isEmpty {
+                VStack {
+                    Spacer()
+                    Text(text)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(.black.opacity(0.65), in: RoundedRectangle(cornerRadius: 6))
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 36)
+                }
+                .allowsHitTesting(false)
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
