@@ -157,3 +157,22 @@
 "pro.cancel" = "キャンセル";
 "pro.limit_banner" = "無料版 — 書き出し1分制限";
 "pro.upgrade_button" = "PROにアップグレード";
+
+// MARK: - Model Download
+"model.title" = "AIモデル管理";
+"model.subtitle" = "インストール後、必要なモデルをダウンロードしてください。\nアップデートで新しいモデルが追加されます。";
+"model.download" = "ダウンロード";
+"model.downloading" = "ダウンロード中 %d%%";
+"model.downloaded" = "利用可能";
+"model.retry" = "再試行";
+"model.refresh" = "更新";
+"model.cache_hint" = "モデルは ~/.cache/huggingface に保存されます";
+"model.manage" = "AIモデル管理";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "PROにアップグレード";
+"store.upgrade_body" = "無制限の動画をエクスポート。一度の購入で永久に使えます。";
+"store.buy" = "%@ で購入";
+"store.restore" = "購入を復元";
+"store.purchasing" = "処理中…";
+"store.not_available" = "現在ご購入いただけません";

@@ -793,6 +793,87 @@ def handle_retranscribe_to_file(params: dict) -> dict:
     }
 
 
+def handle_check_model(params: dict) -> dict:
+    """HuggingFace 캐시에 모델이 있는지 확인.
+
+    params:
+        model_id: str — HuggingFace 모델 ID (예: "mlx-community/Qwen3-ASR-0.6B-8bit")
+
+    returns:
+        model_id: str
+        available: bool
+    """
+    import os
+
+    model_id = params.get("model_id")
+    if not model_id:
+        raise ValueError("model_id is required")
+
+    hf_home = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+    hub_dir = os.path.join(hf_home, "hub")
+    folder = "models--" + model_id.replace("/", "--")
+    snapshots = os.path.join(hub_dir, folder, "snapshots")
+
+    available = os.path.isdir(snapshots) and len(os.listdir(snapshots)) > 0
+    return {"model_id": model_id, "available": available}
+
+
+def handle_download_model(params: dict) -> dict:
+    """HuggingFace에서 MLX 모델을 다운로드.
+
+    params:
+        model_id: str
+
+    returns:
+        model_id: str
+        path: str — 다운로드된 캐시 경로
+    """
+    import os
+    import threading
+    import time
+
+    model_id = params.get("model_id")
+    if not model_id:
+        raise ValueError("model_id is required")
+
+    _progress("download_model", 0, f"모델 다운로드 준비 중: {model_id}")
+
+    from huggingface_hub import snapshot_download
+
+    result: dict = {"path": None, "error": None}
+
+    def _run():
+        try:
+            path = snapshot_download(repo_id=model_id)
+            result["path"] = path
+        except Exception as exc:
+            result["error"] = str(exc)
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+
+    hf_home = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+    hub_dir = os.path.join(hf_home, "hub")
+    folder = "models--" + model_id.replace("/", "--")
+    blobs_dir = os.path.join(hub_dir, folder, "blobs")
+
+    tick = 0
+    while thread.is_alive():
+        time.sleep(2)
+        tick += 1
+        count = len(os.listdir(blobs_dir)) if os.path.isdir(blobs_dir) else 0
+        pct = min(90, tick * 3)
+        _progress("download_model", pct, f"다운로드 중… (파일 {count}개 수신)")
+
+    thread.join()
+
+    if result["error"]:
+        raise RuntimeError(f"모델 다운로드 실패: {result['error']}")
+
+    _progress("download_model", 100, "다운로드 완료")
+    return {"model_id": model_id, "path": result["path"]}
+
+
 def handle_render_mp4(params: dict) -> dict:
     """Kept 세그먼트들을 ffmpeg으로 concat하여 MP4로 렌더링.
 
@@ -911,6 +992,8 @@ METHOD_TABLE: dict[str, Any] = {
     "export_srt": handle_export_srt,
     "export_itt": handle_export_itt,
     "render_mp4": handle_render_mp4,
+    "check_model": handle_check_model,
+    "download_model": handle_download_model,
 }
 
 

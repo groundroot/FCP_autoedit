@@ -15,6 +15,9 @@ struct SilenciApp: App {
     @NSApplicationDelegateAdaptor(SilenciAppDelegate.self) var appDelegate
     @State private var pythonEnv = PythonEnvironment()
     @State private var appActions = AppActions()
+    @State private var proManager = ProManager()
+    @State private var storeService = StoreService()
+    @State private var modelManager = ModelManager()
     @State private var showRemoveConfirm = false
 
     init() {
@@ -31,10 +34,15 @@ struct SilenciApp: App {
             } else if isTestAnalyzeMode {
                 AnalyzeTestRunner()
             } else {
-                ContentView(pythonEnv: pythonEnv, appActions: appActions)
-                    .task {
-                        await pythonEnv.ensureReady()
-                    }
+                ContentView(
+                    pythonEnv: pythonEnv,
+                    appActions: appActions,
+                    proManager: proManager,
+                    storeService: storeService,
+                    modelManager: modelManager
+                )
+                .task { await pythonEnv.ensureReady() }
+                .task { await storeService.restoreIfNeeded(proManager: proManager) }
             }
         }
         .defaultSize(width: 1200, height: 800)

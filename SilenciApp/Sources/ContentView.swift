@@ -4,13 +4,16 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     var pythonEnv: PythonEnvironment
     var appActions: AppActions
+    var proManager: ProManager
+    var storeService: StoreService
+    var modelManager: ModelManager
     @State private var bridge = PythonBridge()
     @State private var videoModel = VideoPlayerModel()
     @State private var analysisService = AnalysisService()
     @State private var settings = AnalysisSettings()
-    @State private var proManager = ProManager()
     @State private var showUpgradeAlert = false
     @State private var pendingExportFormat: ExportFormat?
+    @State private var showModelManager = false
     @State private var mp4RenderState: MP4RenderState = .idle
 
     enum MP4RenderState: Equatable {
@@ -188,7 +191,14 @@ struct ContentView: View {
                 .hidden()
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(settings: settings, isPresented: $showSettings)
+            SettingsView(
+                settings: settings,
+                proManager: proManager,
+                storeService: storeService,
+                modelManager: modelManager,
+                pythonEnv: pythonEnv,
+                isPresented: $showSettings
+            )
         }
         .sheet(isPresented: $showAnalyzeDialog) {
             AnalyzeDialogView(settings: settings, isPresented: $showAnalyzeDialog) {
@@ -198,10 +208,14 @@ struct ContentView: View {
             }
         }
         .alert(L10n.tr("pro.upgrade_title"), isPresented: $showUpgradeAlert) {
-            Button(L10n.tr("pro.upgrade_cta"), role: .none) {
-                // Phase 3: StoreKit purchase trigger goes here
-                // proManager.unlock()
+            Button(storeService.isPurchasing
+                   ? L10n.tr("store.purchasing")
+                   : L10n.tr("store.buy", storeService.proPrice),
+                   role: .none) {
+                Task { await storeService.purchase(proManager: proManager) }
             }
+            .disabled(storeService.isPurchasing)
+
             Button(L10n.tr("pro.export_anyway"), role: .none) {
                 if let fmt = pendingExportFormat {
                     performExport(format: fmt, clamp: true)
@@ -213,6 +227,13 @@ struct ContentView: View {
             }
         } message: {
             Text(L10n.tr("pro.upgrade_body"))
+        }
+        .sheet(isPresented: $showModelManager) {
+            ModelDownloadView(
+                modelManager: modelManager,
+                pythonEnv: pythonEnv,
+                isPresented: $showModelManager
+            )
         }
         .onAppear { settings.load() }
     }
@@ -292,6 +313,10 @@ struct ContentView: View {
                             .foregroundStyle(.orange)
                     }
                 }
+            }
+
+            Button { showModelManager = true } label: {
+                Label(L10n.tr("model.manage"), systemImage: "cpu")
             }
 
             Button { showSettings.toggle() } label: {

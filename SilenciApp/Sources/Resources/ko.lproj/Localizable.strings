@@ -157,3 +157,22 @@
 "pro.cancel" = "취소";
 "pro.limit_banner" = "무료 버전 — 1분 내보내기 제한";
 "pro.upgrade_button" = "PRO 업그레이드";
+
+// MARK: - Model Download
+"model.title" = "AI 모델 관리";
+"model.subtitle" = "앱 설치 후 원하는 모델을 선택해서 다운로드하세요.\n업데이트로 새 모델이 추가될 수 있습니다.";
+"model.download" = "다운로드";
+"model.downloading" = "다운로드 중 %d%%";
+"model.downloaded" = "사용 가능";
+"model.retry" = "재시도";
+"model.refresh" = "새로고침";
+"model.cache_hint" = "모델은 ~/.cache/huggingface 에 저장됩니다";
+"model.manage" = "AI 모델 관리";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "PRO로 업그레이드";
+"store.upgrade_body" = "무제한 길이의 영상을 내보내세요. 단 한 번의 결제로 영구 사용 가능합니다.";
+"store.buy" = "구매하기 %@";
+"store.restore" = "구매 내역 복원";
+"store.purchasing" = "구매 처리 중…";
+"store.not_available" = "현재 구매를 사용할 수 없습니다";

@@ -157,3 +157,22 @@
 "pro.cancel" = "Cancel";
 "pro.limit_banner" = "Free version — 1-minute export limit";
 "pro.upgrade_button" = "Upgrade to PRO";
+
+// MARK: - Model Download
+"model.title" = "AI Model Manager";
+"model.subtitle" = "Download the models you need after installation.\nNew models can be added via app updates.";
+"model.download" = "Download";
+"model.downloading" = "Downloading %d%%";
+"model.downloaded" = "Available";
+"model.retry" = "Retry";
+"model.refresh" = "Refresh";
+"model.cache_hint" = "Models are stored in ~/.cache/huggingface";
+"model.manage" = "Manage AI Models";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "Upgrade to PRO";
+"store.upgrade_body" = "Export videos of unlimited length. One-time purchase, use forever.";
+"store.buy" = "Buy %@";
+"store.restore" = "Restore Purchase";
+"store.purchasing" = "Processing…";
+"store.not_available" = "Purchase not available at this time";

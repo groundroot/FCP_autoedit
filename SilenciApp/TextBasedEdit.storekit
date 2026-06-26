@@ -1,0 +1,43 @@
+{
+  "identifier": "com.textbasededit",
+  "nonConsumableProducts": [
+    {
+      "displayPrice": "9.99",
+      "familySharable": false,
+      "internalID": "00000000-0000-0000-0000-000000000001",
+      "localizations": [
+        {
+          "description": "Unlock unlimited video length and all PRO features.",
+          "displayName": "PRO Upgrade",
+          "locale": "en_US"
+        },
+        {
+          "description": "무제한 영상 길이 및 모든 PRO 기능을 해제합니다.",
+          "displayName": "PRO 업그레이드",
+          "locale": "ko_KR"
+        },
+        {
+          "description": "無制限の動画長さとすべてのPRO機能をアンロックします。",
+          "displayName": "PROアップグレード",
+          "locale": "ja_JP"
+        },
+        {
+          "description": "解锁无限视频时长和所有PRO功能。",
+          "displayName": "PRO升级",
+          "locale": "zh_CN"
+        }
+      ],
+      "productID": "com.textbasededit.pro",
+      "referenceName": "PRO Upgrade",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_enableFamilySharingInfoSheet": false
+  },
+  "version": {
+    "major": 3,
+    "minor": 0,
+    "patch": 0
+  }
+}

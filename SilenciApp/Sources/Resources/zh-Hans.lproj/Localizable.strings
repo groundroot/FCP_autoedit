@@ -157,3 +157,22 @@
 "pro.cancel" = "取消";
 "pro.limit_banner" = "免费版 — 导出1分钟限制";
 "pro.upgrade_button" = "升级到PRO";
+
+// MARK: - Model Download
+"model.title" = "AI模型管理";
+"model.subtitle" = "安装后下载所需模型。\n更新后可添加新模型。";
+"model.download" = "下载";
+"model.downloading" = "下载中 %d%%";
+"model.downloaded" = "可用";
+"model.retry" = "重试";
+"model.refresh" = "刷新";
+"model.cache_hint" = "模型保存在 ~/.cache/huggingface";
+"model.manage" = "管理AI模型";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "升级到PRO";
+"store.upgrade_body" = "导出无限长度的视频。一次购买，永久使用。";
+"store.buy" = "购买 %@";
+"store.restore" = "恢复购买";
+"store.purchasing" = "处理中…";
+"store.not_available" = "当前无法购买";
