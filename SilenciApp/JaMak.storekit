@@ -1,5 +1,5 @@
 {
-  "identifier": "com.textbasededit",
+  "identifier": "com.daeyoung.jamak",
   "nonConsumableProducts": [
     {
       "displayPrice": "9.99",
@@ -27,7 +27,7 @@
           "locale": "zh_CN"
         }
       ],
-      "productID": "com.textbasededit.pro",
+      "productID": "com.daeyoung.jamak.pro",
       "referenceName": "PRO Upgrade",
       "type": "NonConsumable"
     }

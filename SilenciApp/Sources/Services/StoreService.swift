@@ -3,12 +3,12 @@ import StoreKit
 
 /// StoreKit 2 — manages the single PRO non-consumable product.
 /// Production purchase requires App Store Connect setup.
-/// Local testing: open in Xcode with TextBasedEdit.storekit configuration active.
+/// Local testing: open in Xcode with JaMak.storekit configuration active.
 @MainActor
 @Observable
 final class StoreService {
 
-    static let proProductId = "com.textbasededit.pro"
+    static let proProductId = "com.daeyoung.jamak.pro"
 
     // MARK: - State
 
@@ -22,6 +22,7 @@ final class StoreService {
     // MARK: - Init / Deinit
 
     init() {
+        guard AppConfig.showsProFeatures else { return }
         transactionListenerTask = listenForTransactions()
         Task { await loadProducts() }
     }
@@ -29,6 +30,7 @@ final class StoreService {
     // MARK: - Product Loading
 
     func loadProducts() async {
+        guard AppConfig.showsProFeatures else { return }
         do {
             products = try await Product.products(for: [Self.proProductId])
         } catch {
@@ -39,6 +41,7 @@ final class StoreService {
     // MARK: - Purchase
 
     func purchase(proManager: ProManager) async {
+        guard AppConfig.showsProFeatures else { return }
         guard let product = products.first else {
             purchaseError = "Product not available. Check App Store Connect setup."
             return
@@ -73,6 +76,7 @@ final class StoreService {
 
     /// Re-verify all current entitlements — call on launch to restore PRO after reinstall.
     func restoreIfNeeded(proManager: ProManager) async {
+        guard AppConfig.showsProFeatures else { return }
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result,
                transaction.productID == Self.proProductId {

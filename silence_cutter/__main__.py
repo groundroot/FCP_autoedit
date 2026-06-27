@@ -5,6 +5,20 @@ import sys
 from pathlib import Path
 
 
+def _export_language_code(language: str) -> str:
+    return {
+        "Korean": "ko",
+        "English": "en",
+        "Japanese": "ja",
+        "Chinese": "zh",
+        "German": "de",
+        "French": "fr",
+        "Spanish": "es",
+        "Italian": "it",
+        "Portuguese": "pt-BR",
+    }.get(language, "ko")
+
+
 def cmd_cut(args):
     """영상 → 무음 컷 + 자막 FCPXML 생성"""
     video_path = Path(args.video)
@@ -127,12 +141,7 @@ def cmd_script(args):
         print("\n" + result)
 
     if args.itt:
-        lang_code = {
-            "Korean": "ko",
-            "English": "en",
-            "Japanese": "ja",
-            "Chinese": "zh",
-        }.get(args.language, "ko")
+        lang_code = _export_language_code(args.language)
         itt_path = Path(args.output).with_suffix(".itt") if args.output else video_path.with_suffix(".itt")
         generate_itt(
             segments=transcribed,
@@ -179,7 +188,7 @@ def cmd_resub(args):
 
     from .retranscribe import retranscribe
 
-    lang_code = {"Korean": "ko", "English": "en", "Japanese": "ja", "Chinese": "zh"}.get(args.language, "ko")
+    lang_code = _export_language_code(args.language)
     result = retranscribe(
         fcpxml_path=fcpxml_path,
         output_path=args.output,

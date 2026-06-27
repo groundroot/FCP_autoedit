@@ -120,17 +120,19 @@ struct ContentView: View {
                     Image(systemName: "scissors")
                         .font(.body.weight(.bold))
                         .foregroundStyle(.cyan)
-                    Text("TEXT BASED EDIT")
+                    Text(AppConfig.appName)
                         .font(.system(.subheadline, design: .rounded, weight: .black))
-                    Text(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"))
-                        .font(.caption2.weight(.heavy))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(
-                            proManager.isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
-                            in: RoundedRectangle(cornerRadius: 4)
-                        )
+                    if AppConfig.showsProFeatures {
+                        Text(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"))
+                            .font(.caption2.weight(.heavy))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(
+                                proManager.isPro ? Color.cyan.opacity(0.8) : Color.orange.opacity(0.85),
+                                in: RoundedRectangle(cornerRadius: 4)
+                            )
+                    }
                 }
             }
             ToolbarItem(placement: .navigation) {
@@ -171,14 +173,16 @@ struct ContentView: View {
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        ForEach(ExportFormat.allCases) { format in
+                        ForEach(AppConfig.enabledExportFormats) { format in
                             Button(format.displayName) { exportFile(format: format) }
                         }
                     } label: {
                         Label(L10n.tr("toolbar.export"), systemImage: "square.and.arrow.up")
                     }
                 }
-                if !proManager.isPro && ProManager.keptDuration(analysisService.segments) > ProManager.freeLimitSeconds {
+                if AppConfig.showsProFeatures,
+                   !proManager.isPro,
+                   ProManager.keptDuration(analysisService.segments) > ProManager.freeLimitSeconds {
                     ToolbarItem(placement: .primaryAction) {
                         Button { showUpgradeAlert = true } label: {
                             Label(L10n.tr("pro.upgrade_button"), systemImage: "star.fill")
@@ -189,9 +193,11 @@ struct ContentView: View {
             }
 
             // ── 오른쪽: 항상 표시 ──────────────────────────────────
-            ToolbarItem(placement: .primaryAction) {
-                Button { showModelManager = true } label: {
-                    Label(L10n.tr("model.manage"), systemImage: "cpu")
+            if AppConfig.allowsModelDownload {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showModelManager = true } label: {
+                        Label(L10n.tr("model.manage"), systemImage: "cpu")
+                    }
                 }
             }
             ToolbarItem(placement: .primaryAction) {
@@ -263,9 +269,9 @@ struct ContentView: View {
         VStack(spacing: 0) {
             HSplitView {
                 textEditorPanel
-                    .frame(minWidth: 360)
+                    .frame(minWidth: 320, idealWidth: 380, maxWidth: 460)
                 videoPanel
-                    .frame(minWidth: 260, idealWidth: 380, maxWidth: 520)
+                    .frame(minWidth: 520, idealWidth: 900, maxWidth: .infinity)
             }
             if showFindReplace {
                 Divider()
@@ -342,7 +348,10 @@ struct ContentView: View {
         }
         .overlay(alignment: .top) {
             let keptDur = ProManager.keptDuration(analysisService.segments)
-            if !proManager.isPro && !analysisService.segments.isEmpty && keptDur > ProManager.freeLimitSeconds {
+            if AppConfig.showsProFeatures,
+               !proManager.isPro,
+               !analysisService.segments.isEmpty,
+               keptDur > ProManager.freeLimitSeconds {
                 HStack(spacing: 6) {
                     Image(systemName: "lock.fill")
                         .font(.caption2)
@@ -476,7 +485,7 @@ struct ContentView: View {
                 timelineDuration: analysisService.timelineDuration,
                 onSeek: { videoModel.seek(to: $0) }
             )
-            .frame(height: 56)
+            .frame(height: 68)
         }
         .onChange(of: analysisService.segments.map(\.id)) { _, _ in
             videoModel.segments = analysisService.segments
@@ -601,7 +610,7 @@ struct ContentView: View {
 
     private func exportFile(format: ExportFormat) {
         let keptDur = ProManager.keptDuration(analysisService.segments)
-        if !proManager.isPro && keptDur > ProManager.freeLimitSeconds {
+        if AppConfig.showsProFeatures, !proManager.isPro && keptDur > ProManager.freeLimitSeconds {
             pendingExportFormat = format
             showUpgradeAlert = true
         } else {
@@ -742,4 +751,3 @@ struct ContentView: View {
         isTesting = false
     }
 }
-

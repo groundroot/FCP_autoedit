@@ -17,7 +17,7 @@ public func launchSilenciApp() {
 }
 
 struct SilenciApp: App {
-    @NSApplicationDelegateAdaptor(SilenciAppDelegate.self) var appDelegate
+    @NSApplicationDelegateAdaptor(JaMakAppDelegate.self) var appDelegate
     @State private var pythonEnv = PythonEnvironment()
     @State private var appActions = AppActions()
     @State private var proManager = ProManager()
@@ -47,7 +47,11 @@ struct SilenciApp: App {
                     modelManager: modelManager
                 )
                 .task { await pythonEnv.ensureReady() }
-                .task { await storeService.restoreIfNeeded(proManager: proManager) }
+                .task {
+                    if AppConfig.showsProFeatures {
+                        await storeService.restoreIfNeeded(proManager: proManager)
+                    }
+                }
             }
         }
         .defaultSize(width: 1200, height: 800)

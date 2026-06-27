@@ -10,16 +10,28 @@ enum L10n {
         case en = "en"
         case ja = "ja"
         case zhHans = "zh-Hans"
+        case zhHant = "zh-Hant"
+        case de = "de"
+        case fr = "fr"
+        case es = "es"
+        case it = "it"
+        case ptBR = "pt-BR"
 
         var id: String { rawValue }
 
         var displayName: String {
             switch self {
-            case .system: return "시스템 기본"
+            case .system: return L10n.tr("settings.language_system")
             case .ko: return "한국어"
             case .en: return "English"
             case .ja: return "日本語"
-            case .zhHans: return "中文"
+            case .zhHans: return "简体中文"
+            case .zhHant: return "繁體中文"
+            case .de: return "Deutsch"
+            case .fr: return "Français"
+            case .es: return "Español"
+            case .it: return "Italiano"
+            case .ptBR: return "Português (Brasil)"
             }
         }
     }

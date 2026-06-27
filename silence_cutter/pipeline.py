@@ -14,6 +14,20 @@ from .itt import generate_itt
 from .srt import generate_srt
 
 
+def _export_language_code(language: str) -> str:
+    return {
+        "Korean": "ko",
+        "English": "en",
+        "Japanese": "ja",
+        "Chinese": "zh",
+        "German": "de",
+        "French": "fr",
+        "Spanish": "es",
+        "Italian": "it",
+        "Portuguese": "pt-BR",
+    }.get(language, "ko")
+
+
 def _probe_video(video_path: str | Path) -> dict:
     """ffprobe로 영상 정보 추출"""
     result = subprocess.run(
@@ -149,7 +163,7 @@ def run(
           f"({silence_total / duration * 100:.0f}% 제거)")
 
     # 4. ASR: 전사 + 단어별 타임스탬프
-    print("[pipeline] 음성 인식 중 (Qwen3-ASR + ForcedAligner)...")
+    print("[pipeline] 음성 인식 중...")
     transcriber = Transcriber(
         asr_model=asr_model,
         aligner_model=aligner_model,
@@ -176,7 +190,7 @@ def run(
 
     # iTT 자막 파일 생성 (타임라인 기준 시간으로 변환)
     if export_itt:
-        lang_code = {"Korean": "ko", "English": "en", "Japanese": "ja", "Chinese": "zh"}.get(language, "ko")
+        lang_code = _export_language_code(language)
         itt_path = output_path.with_suffix(".itt")
         print("[pipeline] iTT 자막 생성 중...")
 
@@ -319,7 +333,7 @@ def run_multi(
     print(f"[multi] 완료! → {output_path}")
 
     if export_itt:
-        lang_code = {"Korean": "ko", "English": "en", "Japanese": "ja", "Chinese": "zh"}.get(language, "ko")
+        lang_code = _export_language_code(language)
         itt_path = output_path.with_suffix(".itt")
         print("[multi] iTT 자막 생성 중...")
 
@@ -378,7 +392,7 @@ def run_subtitle_only(
         raise FileNotFoundError(f"영상 파일을 찾을 수 없습니다: {video_path}")
 
     stem = video_path.stem
-    lang_code = {"Korean": "ko", "English": "en", "Japanese": "ja", "Chinese": "zh"}.get(language, "ko")
+    lang_code = _export_language_code(language)
 
     # 1. 오디오 추출
     print(f"[subtitle] 영상: {video_path.name}")

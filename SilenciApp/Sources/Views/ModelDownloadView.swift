@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sheet that shows all available MLX models with download status and controls.
+/// Sheet that shows all available ASR models with download status and controls.
 struct ModelDownloadView: View {
     var modelManager: ModelManager
     var pythonEnv: PythonEnvironment

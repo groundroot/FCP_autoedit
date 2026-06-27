@@ -1,0 +1,193 @@
+/* 繁體中文 */
+
+// MARK: - App Menu
+"menu.remove_env" = "移除 Python 環境（%@）…";
+"menu.remove_confirm_title" = "要移除 Python 環境嗎？";
+"menu.remove_confirm_delete" = "移除";
+"menu.remove_confirm_cancel" = "取消";
+"menu.remove_confirm_message" = "路徑：%@\n大小：%@\n\n下次啟動時會重新安裝。";
+
+// MARK: - Setup Overlay
+"setup.checking" = "正在檢查環境…";
+"setup.installing_title" = "正在安裝 Python 環境";
+"setup.installing_subtitle" = "僅首次啟動需要";
+"setup.failed_title" = "環境設定失敗";
+"setup.retry" = "重試";
+
+// MARK: - Main Content
+"main.load_video" = "載入影片以開始";
+"main.transcript" = "逐字稿";
+
+// MARK: - Video Preview
+"preview.placeholder" = "將影片檔拖到這裡\n或使用「開啟」按鈕";
+
+// MARK: - Toolbar
+"toolbar.open" = "開啟";
+"toolbar.analyze" = "分析";
+"toolbar.find" = "尋找";
+"toolbar.export" = "輸出";
+"toolbar.settings" = "設定";
+
+// MARK: - Analyze Dialog
+"dialog.title" = "分析設定";
+"dialog.speech_recognition" = "語音辨識";
+"dialog.language" = "語言";
+"dialog.model" = "模型";
+"dialog.silence_detection" = "靜音偵測";
+"dialog.sensitivity" = "靈敏度";
+"dialog.sensitivity_hint" = "越低越靈敏（可偵測較小聲的語音）";
+"dialog.min_silence" = "最短靜音";
+"dialog.padding" = "前後緩衝";
+"dialog.subtitle" = "字幕";
+"dialog.max_clip" = "最長片段";
+"dialog.max_chars" = "最多字元";
+"dialog.chars_unit" = "字元";
+"dialog.font" = "字體";
+"dialog.defaults" = "預設值";
+"dialog.cancel" = "取消";
+"dialog.start" = "開始分析";
+"dialog.seconds_unit" = "%d秒";
+
+// MARK: - Analysis Progress
+"progress.preparing" = "正在準備分析…";
+"progress.cancel" = "取消";
+"progress.analysis" = "分析";
+"progress.model_download" = "正在下載 AI 模型";
+"progress.phase_analyze" = "分析中";
+"progress.phase_vad" = "正在偵測語音";
+
+// MARK: - Clip Card
+"clip.title" = "片段 %d";
+"clip.split" = "分割片段";
+"clip.merge_next" = "與下一個片段合併";
+"clip.video_edit" = "影片編輯";
+"clip.subtitle_edit" = "字幕編輯";
+"clip.subtitle_placeholder" = "字幕文字";
+"clip.deleted" = "片段 %d — 已刪除";
+"clip.restore" = "還原";
+
+// MARK: - Word Flow
+"word.split_here" = "在此分割片段";
+
+// MARK: - Find & Replace
+"find.search" = "尋找";
+"find.replace" = "取代";
+"find.replace_all" = "全部取代";
+"find.replaced_count" = "已取代 %d 處";
+
+// MARK: - Transcript Editor
+"transcript.no_results" = "沒有分析結果";
+"transcript.no_speech" = "未偵測到語音。";
+
+// MARK: - Settings View
+"settings.title" = "分析設定";
+"settings.speech_recognition" = "語音辨識";
+"settings.language" = "語言";
+"settings.asr_model" = "ASR 模型";
+"settings.vad" = "靜音偵測（VAD）";
+"settings.sensitivity" = "靈敏度";
+"settings.sensitivity_hint" = "越低越靈敏（可偵測較小聲的語音）";
+"settings.min_silence" = "最短靜音";
+"settings.min_speech" = "最短語音";
+"settings.padding" = "前後緩衝";
+"settings.segment" = "片段分割";
+"settings.max_length" = "最長長度";
+"settings.max_length_hint" = "片段最長長度（在單字邊界分割）";
+"settings.subtitle" = "字幕";
+"settings.max_chars" = "最多字元";
+"settings.chars_unit" = "字元";
+"settings.font_size" = "字體大小";
+"settings.reset" = "重設為預設值";
+"settings.seconds_unit" = "%d秒";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "匯入 FCPXML";
+"toolbar.import_fcpxml_message" = "選擇已編輯的 FCPXML 檔案以重新轉錄";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "將 FCPXML 檔案拖到這裡";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "重新轉錄";
+"retranscribe.input" = "輸入";
+"retranscribe.output" = "輸出";
+"retranscribe.change" = "更改";
+"retranscribe.language" = "語言";
+"retranscribe.ai_model" = "AI 模型";
+"retranscribe.export_itt" = "同時輸出 iTT 字幕";
+"retranscribe.start" = "開始重新轉錄";
+"retranscribe.in_progress" = "正在重新轉錄…";
+"retranscribe.cancel" = "取消";
+"retranscribe.done" = "完成！";
+"retranscribe.show_in_finder" = "在 Finder 中顯示";
+"retranscribe.close" = "關閉";
+"retranscribe.error" = "錯誤";
+"retranscribe.retry" = "重試";
+
+// MARK: - Settings Language
+"settings.app_language" = "App 語言";
+"settings.language_system" = "跟隨系統";
+"settings.restart_hint" = "重新啟動 App 以完整套用變更";
+
+// MARK: - Speech Languages
+"speech_language.korean" = "韓文";
+"speech_language.english" = "英文";
+"speech_language.japanese" = "日文";
+"speech_language.chinese" = "中文";
+"speech_language.german" = "德文";
+"speech_language.french" = "法文";
+"speech_language.spanish" = "西班牙文";
+"speech_language.italian" = "義大利文";
+"speech_language.portuguese" = "葡萄牙文";
+
+// MARK: - Text Based Editor
+"editor.transcript" = "逐字稿";
+"editor.kept_words" = "保留 %d/%d";
+"editor.removed_words" = "已移除 %d";
+"editor.auto_scroll" = "自動捲動";
+"editor.empty_title" = "開啟並分析影片";
+"editor.empty_subtitle" = "刪除文字會自動移除對應的影片區段";
+
+// MARK: - Subtitle Options
+"subtitle.section_title" = "字幕選項";
+"subtitle.density" = "字幕密度";
+"subtitle.density_hint" = "越低字幕越短且較少，越高顯示越頻繁";
+"subtitle.lines" = "每則字幕行數";
+"subtitle.lines_one" = "1 行";
+"subtitle.lines_two" = "2 行";
+"subtitle.speakers" = "說話者";
+"subtitle.speakers_auto" = "自動";
+"subtitle.speakers_1" = "1";
+"subtitle.speakers_2" = "2";
+"subtitle.speakers_3" = "3";
+"subtitle.speakers_4" = "4";
+
+// MARK: - Pro / Free
+"pro.free_badge" = "免費";
+"pro.pro_badge" = "PRO";
+"pro.upgrade_title" = "已達 1 分鐘限制";
+"pro.upgrade_body" = "免費版最多可輸出 1 分鐘。升級至 PRO 可無限制輸出。";
+"pro.upgrade_cta" = "升級至 PRO";
+"pro.export_anyway" = "輸出 1 分鐘";
+"pro.cancel" = "取消";
+"pro.limit_banner" = "免費版 — 1 分鐘輸出限制";
+"pro.upgrade_button" = "升級至 PRO";
+
+// MARK: - Model Download
+"model.title" = "AI 模型管理";
+"model.subtitle" = "安裝後下載需要的模型。\n新模型可透過 App 更新加入。";
+"model.download" = "下載";
+"model.downloading" = "下載中 %d%%";
+"model.downloaded" = "可用";
+"model.retry" = "重試";
+"model.refresh" = "重新整理";
+"model.cache_hint" = "模型會儲存在 JaMak App 資料中";
+"model.manage" = "管理 AI 模型";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "升級至 PRO";
+"store.upgrade_body" = "輸出不限長度的影片。一次購買，永久使用。";
+"store.buy" = "購買 %@";
+"store.restore" = "恢復購買";
+"store.purchasing" = "處理中…";
+"store.not_available" = "目前無法購買";

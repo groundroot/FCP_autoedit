@@ -71,6 +71,20 @@ struct AnalysisSettingsTests {
         #expect(s.subtitleLines == 1)
     }
 
+    @Test func speechLanguageCatalogCoversLaunchMarkets() {
+        #expect(AnalysisSettings.languages == [
+            "Korean",
+            "English",
+            "Japanese",
+            "Chinese",
+            "German",
+            "French",
+            "Spanish",
+            "Italian",
+            "Portuguese",
+        ])
+    }
+
     // MARK: - resetToDefaults
 
     @Test func resetToDefaults() {
@@ -105,12 +119,13 @@ struct AnalysisSettingsTests {
 
     @Test func asrModelRawValues() {
         #expect(AnalysisSettings.ASRModel.small.rawValue == "mlx-community/Qwen3-ASR-0.6B-8bit")
+        #expect(AnalysisSettings.ASRModel.whisperSmall.rawValue == "Systran/faster-whisper-small")
         #expect(AnalysisSettings.ASRModel.large.rawValue == "mlx-community/Qwen3-ASR-1.7B-8bit")
     }
 
     @Test func asrModelRoundtripViaRawValue() {
-        let raw = AnalysisSettings.ASRModel.large.rawValue
+        let raw = AnalysisSettings.ASRModel.whisperSmall.rawValue
         let restored = AnalysisSettings.ASRModel(rawValue: raw)
-        #expect(restored == .large)
+        #expect(restored == .whisperSmall)
     }
 }

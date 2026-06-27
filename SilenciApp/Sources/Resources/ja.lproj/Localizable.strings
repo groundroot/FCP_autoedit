@@ -126,9 +126,24 @@
 
 // MARK: - Settings Language
 "settings.app_language" = "アプリの言語";
+"settings.language_system" = "システム既定";
 "settings.restart_hint" = "完全に適用するにはアプリを再起動してください";
 
+// MARK: - Speech Languages
+"speech_language.korean" = "韓国語";
+"speech_language.english" = "英語";
+"speech_language.japanese" = "日本語";
+"speech_language.chinese" = "中国語";
+"speech_language.german" = "ドイツ語";
+"speech_language.french" = "フランス語";
+"speech_language.spanish" = "スペイン語";
+"speech_language.italian" = "イタリア語";
+"speech_language.portuguese" = "ポルトガル語";
+
 // MARK: - Text Based Editor
+"editor.transcript" = "文字起こし";
+"editor.kept_words" = "%d/%d 保持";
+"editor.removed_words" = "%d 削除";
 "editor.auto_scroll" = "自動スクロール";
 "editor.empty_title" = "動画を開いて分析してください";
 "editor.empty_subtitle" = "テキストを削除すると対応する映像区間が自動的に削除されます";
@@ -166,7 +181,7 @@
 "model.downloaded" = "利用可能";
 "model.retry" = "再試行";
 "model.refresh" = "更新";
-"model.cache_hint" = "モデルは ~/.cache/huggingface に保存されます";
+"model.cache_hint" = "モデルはJaMakのアプリデータに保存されます";
 "model.manage" = "AIモデル管理";
 
 // MARK: - StoreKit

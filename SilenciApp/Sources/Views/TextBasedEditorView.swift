@@ -17,7 +17,7 @@ struct TextBasedEditorView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            autoScrollBar
+            editorHeader
             Divider()
             ScrollViewReader { proxy in
                 ScrollView {
@@ -42,21 +42,64 @@ struct TextBasedEditorView: View {
         }
     }
 
-    // MARK: - Top bar
+    // MARK: - Header
 
-    private var autoScrollBar: some View {
-        HStack {
+    private var editorHeader: some View {
+        HStack(spacing: 10) {
+            Label(L10n.tr("editor.transcript"), systemImage: "quote.bubble")
+                .font(.headline)
+                .labelStyle(.titleAndIcon)
+
+            HStack(spacing: 6) {
+                statusPill(
+                    L10n.tr("editor.kept_words", keptWordCount, totalWordCount),
+                    systemImage: "checkmark.circle.fill",
+                    color: .cyan
+                )
+                if removedWordCount > 0 {
+                    statusPill(
+                        L10n.tr("editor.removed_words", removedWordCount),
+                        systemImage: "scissors",
+                        color: .red
+                    )
+                }
+            }
+
             Spacer()
+
             Toggle(isOn: $autoScroll) {
                 Text(L10n.tr("editor.auto_scroll"))
             }
             .toggleStyle(.checkbox)
             .font(.caption)
             .foregroundStyle(.secondary)
-            .padding(.trailing, 14)
-            .padding(.vertical, 7)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
         .background(.bar)
+    }
+
+    private func statusPill(_ text: String, systemImage: String, color: Color) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(color)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+    }
+
+    private var totalWordCount: Int {
+        analysisService.segments.reduce(0) { $0 + $1.words.count }
+    }
+
+    private var keptWordCount: Int {
+        analysisService.segments.reduce(0) { partial, segment in
+            partial + segment.words.filter(\.isKept).count
+        }
+    }
+
+    private var removedWordCount: Int {
+        max(0, totalWordCount - keptWordCount)
     }
 
     // MARK: - Item view builder
@@ -154,11 +197,11 @@ private struct WordTokenView: View {
                     .frame(width: 5, height: 5)
             }
             Text(text)
-                .font(.title3)
+                .font(.callout)
                 .fontWeight(isCurrent ? .semibold : .regular)
         }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
         .background(bgView)
         .clipShape(RoundedRectangle(cornerRadius: 5))
         .strikethrough(!isKept, color: .red.opacity(0.75))

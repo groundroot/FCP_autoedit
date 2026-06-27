@@ -126,9 +126,24 @@
 
 // MARK: - Settings Language
 "settings.app_language" = "应用语言";
+"settings.language_system" = "跟随系统";
 "settings.restart_hint" = "重启应用以完全应用更改";
 
+// MARK: - Speech Languages
+"speech_language.korean" = "韩语";
+"speech_language.english" = "英语";
+"speech_language.japanese" = "日语";
+"speech_language.chinese" = "中文";
+"speech_language.german" = "德语";
+"speech_language.french" = "法语";
+"speech_language.spanish" = "西班牙语";
+"speech_language.italian" = "意大利语";
+"speech_language.portuguese" = "葡萄牙语";
+
 // MARK: - Text Based Editor
+"editor.transcript" = "转录";
+"editor.kept_words" = "保留 %d/%d";
+"editor.removed_words" = "已删除 %d";
 "editor.auto_scroll" = "自动滚动";
 "editor.empty_title" = "请打开并分析视频";
 "editor.empty_subtitle" = "删除文字将自动移除对应的视频片段";
@@ -166,7 +181,7 @@
 "model.downloaded" = "可用";
 "model.retry" = "重试";
 "model.refresh" = "刷新";
-"model.cache_hint" = "模型保存在 ~/.cache/huggingface";
+"model.cache_hint" = "模型保存在 JaMak 应用数据中";
 "model.manage" = "管理AI模型";
 
 // MARK: - StoreKit

@@ -1,0 +1,193 @@
+/* Deutsch */
+
+// MARK: - App Menu
+"menu.remove_env" = "Python-Umgebung entfernen (%@)…";
+"menu.remove_confirm_title" = "Python-Umgebung entfernen?";
+"menu.remove_confirm_delete" = "Entfernen";
+"menu.remove_confirm_cancel" = "Abbrechen";
+"menu.remove_confirm_message" = "Pfad: %@\nGröße: %@\n\nWird beim nächsten Start erneut installiert.";
+
+// MARK: - Setup Overlay
+"setup.checking" = "Umgebung wird geprüft…";
+"setup.installing_title" = "Python-Umgebung wird installiert";
+"setup.installing_subtitle" = "Nur beim ersten Start erforderlich";
+"setup.failed_title" = "Einrichtung der Umgebung fehlgeschlagen";
+"setup.retry" = "Erneut versuchen";
+
+// MARK: - Main Content
+"main.load_video" = "Video laden, um zu beginnen";
+"main.transcript" = "Transkript";
+
+// MARK: - Video Preview
+"preview.placeholder" = "Videodatei hierher ziehen\noder die Öffnen-Schaltfläche verwenden";
+
+// MARK: - Toolbar
+"toolbar.open" = "Öffnen";
+"toolbar.analyze" = "Analysieren";
+"toolbar.find" = "Suchen";
+"toolbar.export" = "Exportieren";
+"toolbar.settings" = "Einstellungen";
+
+// MARK: - Analyze Dialog
+"dialog.title" = "Analyseeinstellungen";
+"dialog.speech_recognition" = "Spracherkennung";
+"dialog.language" = "Sprache";
+"dialog.model" = "Modell";
+"dialog.silence_detection" = "Stilleerkennung";
+"dialog.sensitivity" = "Empfindlichkeit";
+"dialog.sensitivity_hint" = "Niedriger = empfindlicher (erkennt leise Sprache)";
+"dialog.min_silence" = "Min. Stille";
+"dialog.padding" = "Puffer";
+"dialog.subtitle" = "Untertitel";
+"dialog.max_clip" = "Max. Clip";
+"dialog.max_chars" = "Max. Zeichen";
+"dialog.chars_unit" = "Zeichen";
+"dialog.font" = "Schrift";
+"dialog.defaults" = "Standardwerte";
+"dialog.cancel" = "Abbrechen";
+"dialog.start" = "Analyse starten";
+"dialog.seconds_unit" = "%ds";
+
+// MARK: - Analysis Progress
+"progress.preparing" = "Analyse wird vorbereitet…";
+"progress.cancel" = "Abbrechen";
+"progress.analysis" = "Analyse";
+"progress.model_download" = "KI-Modell wird geladen";
+"progress.phase_analyze" = "Analysieren";
+"progress.phase_vad" = "Sprache erkennen";
+
+// MARK: - Clip Card
+"clip.title" = "Clip %d";
+"clip.split" = "Clip teilen";
+"clip.merge_next" = "Mit nächstem Clip zusammenführen";
+"clip.video_edit" = "Videoschnitt";
+"clip.subtitle_edit" = "Untertitel bearbeiten";
+"clip.subtitle_placeholder" = "Untertiteltext";
+"clip.deleted" = "Clip %d — Gelöscht";
+"clip.restore" = "Wiederherstellen";
+
+// MARK: - Word Flow
+"word.split_here" = "Clip hier teilen";
+
+// MARK: - Find & Replace
+"find.search" = "Suchen";
+"find.replace" = "Ersetzen";
+"find.replace_all" = "Alle ersetzen";
+"find.replaced_count" = "%d ersetzt";
+
+// MARK: - Transcript Editor
+"transcript.no_results" = "Keine Analyseergebnisse";
+"transcript.no_speech" = "Keine Sprache erkannt.";
+
+// MARK: - Settings View
+"settings.title" = "Analyseeinstellungen";
+"settings.speech_recognition" = "Spracherkennung";
+"settings.language" = "Sprache";
+"settings.asr_model" = "ASR-Modell";
+"settings.vad" = "Stilleerkennung (VAD)";
+"settings.sensitivity" = "Empfindlichkeit";
+"settings.sensitivity_hint" = "Niedriger = empfindlicher (erkennt leise Sprache)";
+"settings.min_silence" = "Min. Stille";
+"settings.min_speech" = "Min. Sprache";
+"settings.padding" = "Puffer";
+"settings.segment" = "Segmentaufteilung";
+"settings.max_length" = "Max. Länge";
+"settings.max_length_hint" = "Maximale Cliplänge (Teilung an Wortgrenzen)";
+"settings.subtitle" = "Untertitel";
+"settings.max_chars" = "Max. Zeichen";
+"settings.chars_unit" = "Zeichen";
+"settings.font_size" = "Schriftgröße";
+"settings.reset" = "Auf Standardwerte zurücksetzen";
+"settings.seconds_unit" = "%ds";
+
+// MARK: - Import FCPXML
+"toolbar.import_fcpxml" = "FCPXML importieren";
+"toolbar.import_fcpxml_message" = "Bearbeitete FCPXML-Datei zur erneuten Transkription auswählen";
+
+// MARK: - Video Preview Drop Overlay
+"preview.fcpxml_drop" = "FCPXML-Datei hier ablegen";
+
+// MARK: - Retranscribe Sheet
+"retranscribe.title" = "Neu transkribieren";
+"retranscribe.input" = "Eingabe";
+"retranscribe.output" = "Ausgabe";
+"retranscribe.change" = "Ändern";
+"retranscribe.language" = "Sprache";
+"retranscribe.ai_model" = "KI-Modell";
+"retranscribe.export_itt" = "Auch iTT-Untertitel exportieren";
+"retranscribe.start" = "Neue Transkription starten";
+"retranscribe.in_progress" = "Neu transkribieren…";
+"retranscribe.cancel" = "Abbrechen";
+"retranscribe.done" = "Fertig!";
+"retranscribe.show_in_finder" = "Im Finder anzeigen";
+"retranscribe.close" = "Schließen";
+"retranscribe.error" = "Fehler";
+"retranscribe.retry" = "Erneut versuchen";
+
+// MARK: - Settings Language
+"settings.app_language" = "App-Sprache";
+"settings.language_system" = "Systemstandard";
+"settings.restart_hint" = "App neu starten, um Änderungen vollständig anzuwenden";
+
+// MARK: - Speech Languages
+"speech_language.korean" = "Koreanisch";
+"speech_language.english" = "Englisch";
+"speech_language.japanese" = "Japanisch";
+"speech_language.chinese" = "Chinesisch";
+"speech_language.german" = "Deutsch";
+"speech_language.french" = "Französisch";
+"speech_language.spanish" = "Spanisch";
+"speech_language.italian" = "Italienisch";
+"speech_language.portuguese" = "Portugiesisch";
+
+// MARK: - Text Based Editor
+"editor.transcript" = "Transkript";
+"editor.kept_words" = "%d/%d behalten";
+"editor.removed_words" = "%d entfernt";
+"editor.auto_scroll" = "Automatisch scrollen";
+"editor.empty_title" = "Video öffnen und analysieren";
+"editor.empty_subtitle" = "Gelöschter Text entfernt automatisch den entsprechenden Videobereich";
+
+// MARK: - Subtitle Options
+"subtitle.section_title" = "Untertiteloptionen";
+"subtitle.density" = "Untertiteldichte";
+"subtitle.density_hint" = "Niedriger = kürzer und weniger, höher = häufiger";
+"subtitle.lines" = "Zeilen pro Untertitel";
+"subtitle.lines_one" = "1 Zeile";
+"subtitle.lines_two" = "2 Zeilen";
+"subtitle.speakers" = "Sprecher";
+"subtitle.speakers_auto" = "Automatisch";
+"subtitle.speakers_1" = "1";
+"subtitle.speakers_2" = "2";
+"subtitle.speakers_3" = "3";
+"subtitle.speakers_4" = "4";
+
+// MARK: - Pro / Free
+"pro.free_badge" = "KOSTENLOS";
+"pro.pro_badge" = "PRO";
+"pro.upgrade_title" = "1-Minuten-Limit erreicht";
+"pro.upgrade_body" = "Die kostenlose Version exportiert bis zu 1 Minute. Upgrade auf PRO für unbegrenzte Exporte.";
+"pro.upgrade_cta" = "Auf PRO upgraden";
+"pro.export_anyway" = "1 Min. exportieren";
+"pro.cancel" = "Abbrechen";
+"pro.limit_banner" = "Kostenlose Version — Exportlimit 1 Minute";
+"pro.upgrade_button" = "Auf PRO upgraden";
+
+// MARK: - Model Download
+"model.title" = "KI-Modellverwaltung";
+"model.subtitle" = "Laden Sie nach der Installation die benötigten Modelle herunter.\nNeue Modelle können per App-Update hinzugefügt werden.";
+"model.download" = "Laden";
+"model.downloading" = "Laden %d%%";
+"model.downloaded" = "Verfügbar";
+"model.retry" = "Erneut versuchen";
+"model.refresh" = "Aktualisieren";
+"model.cache_hint" = "Modelle werden in den JaMak-App-Daten gespeichert";
+"model.manage" = "KI-Modelle verwalten";
+
+// MARK: - StoreKit
+"store.upgrade_title" = "Auf PRO upgraden";
+"store.upgrade_body" = "Videos beliebiger Länge exportieren. Einmal kaufen, dauerhaft nutzen.";
+"store.buy" = "%@ kaufen";
+"store.restore" = "Kauf wiederherstellen";
+"store.purchasing" = "Verarbeitung…";
+"store.not_available" = "Kauf derzeit nicht verfügbar";

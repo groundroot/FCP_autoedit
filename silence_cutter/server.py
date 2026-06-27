@@ -843,7 +843,7 @@ def handle_check_model(params: dict) -> dict:
 
 
 def handle_download_model(params: dict) -> dict:
-    """HuggingFace에서 MLX 모델을 다운로드.
+    """HuggingFace에서 ASR 모델을 다운로드.
 
     params:
         model_id: str

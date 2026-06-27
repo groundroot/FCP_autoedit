@@ -1,7 +1,8 @@
 import Foundation
 
-/// Manages available MLX ASR models — download state, availability check, and on-demand download.
-/// Models are stored in the HuggingFace cache (~/.cache/huggingface/hub/).
+/// Manages available ASR models — download state, availability check, and on-demand download.
+/// Models are stored under the app support directory so sandboxed builds do not touch
+/// the user's global HuggingFace cache.
 @MainActor
 @Observable
 final class ModelManager {
@@ -28,6 +29,13 @@ final class ModelManager {
             approxSizeMB: 500
         ),
         MLXModel(
+            id: "whisper-small",
+            huggingFaceId: "Systran/faster-whisper-small",
+            displayName: "Whisper Small",
+            description: "범용 인식 / General",
+            approxSizeMB: 466
+        ),
+        MLXModel(
             id: "large",
             huggingFaceId: "mlx-community/Qwen3-ASR-1.7B-8bit",
             displayName: "Qwen3-ASR 1.7B",
@@ -38,19 +46,13 @@ final class ModelManager {
 
     // MARK: - HuggingFace cache
 
-    private let hfCacheDir: URL = {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        let hfHome = ProcessInfo.processInfo.environment["HF_HOME"]
-        if let hfHome {
-            return URL(fileURLWithPath: hfHome)
-        }
-        return home.appendingPathComponent(".cache/huggingface/hub")
-    }()
+    private let hfCacheDir: URL = AppPaths.huggingFaceHubDir
 
     // MARK: - Availability (Swift-native, no bridge required)
 
     /// Check which models are locally cached. Runs synchronously — safe to call at startup.
     func refreshAvailability() {
+        AppPaths.createRuntimeDirectoriesIfNeeded()
         let fm = FileManager.default
         for i in models.indices {
             let folderName = "models--" + models[i].huggingFaceId.replacingOccurrences(of: "/", with: "--")

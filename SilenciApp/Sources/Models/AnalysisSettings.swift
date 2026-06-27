@@ -13,7 +13,24 @@ final class AnalysisSettings {
     var language: String = "Korean"
 
     /// Available language options.
-    static let languages = ["Korean", "English", "Japanese", "Chinese"]
+    static let languages = [
+        "Korean",
+        "English",
+        "Japanese",
+        "Chinese",
+        "German",
+        "French",
+        "Spanish",
+        "Italian",
+        "Portuguese",
+    ]
+
+    static func localizedLanguageName(_ language: String) -> String {
+        let key = language
+            .replacingOccurrences(of: " ", with: "_")
+            .lowercased()
+        return L10n.tr("speech_language.\(key)")
+    }
 
     // MARK: - ASR Model
 
@@ -22,6 +39,7 @@ final class AnalysisSettings {
 
     enum ASRModel: String, CaseIterable, Identifiable, Sendable {
         case small = "mlx-community/Qwen3-ASR-0.6B-8bit"
+        case whisperSmall = "Systran/faster-whisper-small"
         case large = "mlx-community/Qwen3-ASR-1.7B-8bit"
 
         var id: String { rawValue }
@@ -29,6 +47,7 @@ final class AnalysisSettings {
         var displayName: String {
             switch self {
             case .small: "Qwen3-ASR 0.6B (빠름)"
+            case .whisperSmall: "Whisper Small (범용)"
             case .large: "Qwen3-ASR 1.7B (고품질)"
             }
         }

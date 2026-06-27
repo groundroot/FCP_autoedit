@@ -1,13 +1,10 @@
 import Foundation
 
-/// Manages the bundled Python environment for standalone distribution.
+/// Manages the local Python runtime used by the analysis bridge.
 ///
-/// On first launch:
-///  1. Checks for Homebrew, Python3, ffmpeg — auto-installs missing ones
-///  2. Creates a venv in ~/Library/Application Support/Silenci/
-///  3. Installs the required Python packages via pip
-///
-/// Subsequent launches reuse the existing venv (unless the version stamp differs).
+/// Direct builds keep the legacy standalone installer path.
+/// APPSTORE builds never install system tools or Python packages at runtime; they only
+/// use a runtime already bundled inside the app.
 @MainActor
 @Observable
 final class PythonEnvironment {
@@ -35,12 +32,14 @@ final class PythonEnvironment {
     // MARK: - Constants
 
     /// Version stamp — bump this when dependencies change to force reinstall.
-    private static let envVersion = "5"
+    private static let envVersion = "6"
 
+    #if !APPSTORE
     /// pip packages required for the server mode.
     private static let serverDependencies: [String] = [
         "numpy<2",
         "soundfile>=0.12.0",
+        "faster-whisper>=1.0.0",
         "torch>=2.0.0",
         "torchaudio",
         "silero-vad>=5.1.2",
@@ -51,13 +50,13 @@ final class PythonEnvironment {
         "scikit-learn",
         "soynlp",
     ]
+    #endif
 
     // MARK: - Paths
 
-    /// ~/Library/Application Support/Silenci/
+    /// App support directory. In a sandboxed build this resolves inside the app container.
     private var supportDir: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return appSupport.appendingPathComponent("Silenci")
+        AppPaths.appSupportDir
     }
 
     /// ~/Library/Application Support/Silenci/venv/
@@ -103,11 +102,18 @@ final class PythonEnvironment {
         progress = 0.0
 
         do {
+            AppPaths.createRuntimeDirectoriesIfNeeded()
+
+            #if APPSTORE
+            let pythonPath = try prepareBundledRuntime()
+            #else
             // Step 1: Ensure system prerequisites (Homebrew, Python3, ffmpeg)
             try await ensurePrerequisites()
 
             // Step 2: Setup Python venv + install packages
             let pythonPath = try await setupVenv()
+            #endif
+
             let modPath = modulePath
             state = .ready(pythonPath: pythonPath, modulePath: modPath)
             progress = 1.0
@@ -123,8 +129,34 @@ final class PythonEnvironment {
         await ensureReady()
     }
 
+    private func prepareBundledRuntime() throws -> String {
+        guard let resourceURL = Bundle.main.resourceURL else {
+            throw PythonEnvError.runtimeMissing
+        }
+
+        let runtimeURL = resourceURL.appendingPathComponent("JaMakRuntime", isDirectory: true)
+        let pythonCandidates = [
+            runtimeURL.appendingPathComponent("bin/python3"),
+            runtimeURL.appendingPathComponent("bin/python"),
+        ]
+
+        guard let python = pythonCandidates.first(where: {
+            FileManager.default.isExecutableFile(atPath: $0.path)
+        }) else {
+            throw PythonEnvError.runtimeMissing
+        }
+
+        let moduleURL = resourceURL.appendingPathComponent("silence_cutter", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: moduleURL.path) else {
+            throw PythonEnvError.runtimeMissing
+        }
+
+        return python.path
+    }
+
     // MARK: - Prerequisites (Homebrew, Python3, ffmpeg)
 
+    #if !APPSTORE
     /// Check and auto-install missing system dependencies.
     private func ensurePrerequisites() async throws {
         // 1. Homebrew
@@ -218,6 +250,7 @@ final class PythonEnvironment {
         if isCommandAvailable("/usr/local/bin/brew") { return "/usr/local/bin/brew" }
         return "brew"
     }
+    #endif
 
     // MARK: - Cleanup
 
@@ -268,6 +301,7 @@ final class PythonEnvironment {
 
     // MARK: - Venv Setup
 
+    #if !APPSTORE
     private func setupVenv() async throws -> String {
         let fm = FileManager.default
 
@@ -378,6 +412,7 @@ final class PythonEnvironment {
     private func runShell(_ command: String) async throws {
         try await run("/bin/bash", arguments: ["-c", command])
     }
+    #endif
 }
 
 // MARK: - Errors
@@ -385,6 +420,7 @@ final class PythonEnvironment {
 enum PythonEnvError: Error, LocalizedError {
     case commandFailed(command: String, message: String)
     case pythonNotFound
+    case runtimeMissing
 
     var errorDescription: String? {
         switch self {
@@ -392,6 +428,8 @@ enum PythonEnvError: Error, LocalizedError {
             "Command failed: \(cmd)\n\(msg)"
         case .pythonNotFound:
             "Python 3 not found. Please install Python 3.10+ first."
+        case .runtimeMissing:
+            "JaMak runtime is not bundled in this build. Reinstall JaMak or install the App Store runtime package."
         }
     }
 }

@@ -128,7 +128,7 @@ struct RetranscribeSheetView: View {
                     .foregroundStyle(.secondary)
                 Picker("", selection: $language) {
                     ForEach(AnalysisSettings.languages, id: \.self) { lang in
-                        Text(lang).tag(lang)
+                        Text(AnalysisSettings.localizedLanguageName(lang)).tag(lang)
                     }
                 }
                 .pickerStyle(.segmented)

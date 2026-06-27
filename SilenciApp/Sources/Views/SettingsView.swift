@@ -15,8 +15,10 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 20) {
                 header
                 appLanguageSection
-                Divider()
-                proSection
+                if AppConfig.showsProFeatures || AppConfig.allowsModelDownload {
+                    Divider()
+                    proSection
+                }
                 Divider()
                 languageSection
                 Divider()
@@ -103,7 +105,7 @@ struct SettingsView: View {
                     .frame(width: 80, alignment: .leading)
                 Picker("", selection: $settings.language) {
                     ForEach(AnalysisSettings.languages, id: \.self) { lang in
-                        Text(lang).tag(lang)
+                        Text(AnalysisSettings.localizedLanguageName(lang)).tag(lang)
                     }
                 }
                 .labelsHidden()
@@ -281,49 +283,55 @@ struct SettingsView: View {
 
     private var proSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"),
-                  systemImage: proManager.isPro ? "star.fill" : "star")
-                .font(.headline)
-                .foregroundStyle(proManager.isPro ? .cyan : .orange)
+            if AppConfig.showsProFeatures {
+                Label(proManager.isPro ? L10n.tr("pro.pro_badge") : L10n.tr("pro.free_badge"),
+                      systemImage: proManager.isPro ? "star.fill" : "star")
+                    .font(.headline)
+                    .foregroundStyle(proManager.isPro ? .cyan : .orange)
 
-            if proManager.isPro {
-                Text("PRO — 무제한 내보내기 활성화")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(L10n.tr("pro.limit_banner"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if proManager.isPro {
+                    Text("PRO — 무제한 내보내기 활성화")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(L10n.tr("pro.limit_banner"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                HStack(spacing: 8) {
-                    Button {
-                        Task { await storeService.purchase(proManager: proManager) }
-                    } label: {
-                        Label(storeService.isPurchasing
-                              ? L10n.tr("store.purchasing")
-                              : L10n.tr("store.buy", storeService.proPrice),
-                              systemImage: "star.fill")
+                    HStack(spacing: 8) {
+                        Button {
+                            Task { await storeService.purchase(proManager: proManager) }
+                        } label: {
+                            Label(storeService.isPurchasing
+                                  ? L10n.tr("store.purchasing")
+                                  : L10n.tr("store.buy", storeService.proPrice),
+                                  systemImage: "star.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.orange)
+                        .disabled(storeService.isPurchasing)
+
+                        Button(L10n.tr("store.restore")) {
+                            Task { await storeService.restoreIfNeeded(proManager: proManager) }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.orange)
-                    .disabled(storeService.isPurchasing)
-
-                    Button(L10n.tr("store.restore")) {
-                        Task { await storeService.restoreIfNeeded(proManager: proManager) }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
                 }
             }
 
-            Divider()
-
-            Button {
-                showModelManager = true
-            } label: {
-                Label(L10n.tr("model.manage"), systemImage: "cpu")
+            if AppConfig.showsProFeatures && AppConfig.allowsModelDownload {
+                Divider()
             }
-            .buttonStyle(.bordered)
+
+            if AppConfig.allowsModelDownload {
+                Button {
+                    showModelManager = true
+                } label: {
+                    Label(L10n.tr("model.manage"), systemImage: "cpu")
+                }
+                .buttonStyle(.bordered)
+            }
         }
     }
 
@@ -339,4 +347,3 @@ struct SettingsView: View {
         }
     }
 }
-

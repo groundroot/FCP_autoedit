@@ -6,15 +6,16 @@ struct ModelManagerTests {
 
     // MARK: - 카탈로그
 
-    @Test func catalogHasTwoModels() {
+    @Test func catalogHasThreeModels() {
         let mm = ModelManager()
-        #expect(mm.models.count == 2)
+        #expect(mm.models.count == 3)
     }
 
     @Test func catalogIds() {
         let mm = ModelManager()
         let ids = mm.models.map(\.id)
         #expect(ids.contains("small"))
+        #expect(ids.contains("whisper-small"))
         #expect(ids.contains("large"))
     }
 
@@ -22,6 +23,8 @@ struct ModelManagerTests {
         let mm = ModelManager()
         #expect(mm.models.first(where: { $0.id == "small" })?.huggingFaceId
                 == "mlx-community/Qwen3-ASR-0.6B-8bit")
+        #expect(mm.models.first(where: { $0.id == "whisper-small" })?.huggingFaceId
+                == "Systran/faster-whisper-small")
         #expect(mm.models.first(where: { $0.id == "large" })?.huggingFaceId
                 == "mlx-community/Qwen3-ASR-1.7B-8bit")
     }
@@ -57,6 +60,13 @@ struct ModelManagerTests {
         #expect(m?.id == "large")
     }
 
+    @Test func modelForWhisperSmall() {
+        let mm = ModelManager()
+        let m = mm.model(for: .whisperSmall)
+        #expect(m != nil)
+        #expect(m?.id == "whisper-small")
+    }
+
     // MARK: - refreshAvailability
 
     @Test func refreshAvailabilityDoesNotCrash() {
@@ -67,7 +77,7 @@ struct ModelManagerTests {
             // isDownloaded는 Bool — nil이 될 수 없음 (컴파일러 보장)
             _ = model.isDownloaded
         }
-        #expect(mm.models.count == 2)
+        #expect(mm.models.count == 3)
     }
 
     @Test func initialStateIsNotDownloading() {

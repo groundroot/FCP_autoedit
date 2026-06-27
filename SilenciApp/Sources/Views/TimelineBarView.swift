@@ -136,13 +136,33 @@ struct TimelineBarWrapper: View {
 
     var body: some View {
         let effectiveDuration = timelineDuration ?? videoModel.duration
+        let playhead = mapCurrentTime()
 
-        TimelineBarView(
-            segments: segments,
-            duration: effectiveDuration,
-            currentTime: mapCurrentTime(),
-            onSeek: onSeek
-        )
+        VStack(spacing: 6) {
+            TimelineBarView(
+                segments: segments,
+                duration: effectiveDuration,
+                currentTime: playhead,
+                onSeek: onSeek
+            )
+            .frame(height: 28)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+
+            HStack {
+                Text(Self.timelineLabel(playhead))
+                Spacer()
+                Text(Self.timelineLabel(effectiveDuration))
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.bar)
     }
 
     /// Map the video player's source-time playhead to timeline-time when
@@ -165,5 +185,12 @@ struct TimelineBarWrapper: View {
         }
 
         return ct
+    }
+
+    private static func timelineLabel(_ seconds: Double) -> String {
+        let clamped = max(0, seconds)
+        let minutes = Int(clamped) / 60
+        let secs = Int(clamped) % 60
+        return String(format: "%02d:%02d", minutes, secs)
     }
 }

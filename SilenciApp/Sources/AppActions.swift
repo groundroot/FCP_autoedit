@@ -2,7 +2,7 @@ import Foundation
 import AppKit
 
 extension Notification.Name {
-    static let openFCPXMLFile = Notification.Name("com.textbasededit.openFCPXMLFile")
+    static let openFCPXMLFile = Notification.Name("com.daeyoung.jamak.openFCPXMLFile")
 }
 
 /// App 레벨 메뉴바 명령을 ContentView로 전달하는 상태 브리지.
@@ -15,7 +15,7 @@ final class AppActions {
 
 /// Finder/Dock에서 .fcpxmld/.fcpxml 파일을 열 때 NSApplicationDelegate 콜백을 받아 Notification으로 전달.
 @MainActor
-final class SilenciAppDelegate: NSObject, NSApplicationDelegate {
+final class JaMakAppDelegate: NSObject, NSApplicationDelegate {
     nonisolated func application(_ application: NSApplication, open urls: [URL]) {
         Task { @MainActor in
             for url in urls {

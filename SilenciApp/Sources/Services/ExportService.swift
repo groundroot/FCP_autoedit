@@ -180,8 +180,8 @@ struct ExportService {
             <effect id="r3" name="Basic Title" uid=".../Titles.localized/Bumper:Opener.localized/Basic Title.localized/Basic Title.moti"/>
           </resources>
           <library>
-            <event name="Silenci Export">
-              <project name="Silenci Export">
+            <event name="JaMak Export">
+              <project name="JaMak Export">
                 <sequence format="\(formatId)" duration="\(rationalStr(totalDur))" \
         tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
                   <spine>
@@ -518,7 +518,7 @@ struct ExportService {
 
     /// Generates a CMX3600 EDL.
     /// Source TC = original video timecodes; Record TC = edited timeline.
-    static func generateEDL(segments: [Segment], fps: Double = 30.0, title: String = "SilenciApp Edit") -> String {
+    static func generateEDL(segments: [Segment], fps: Double = 30.0, title: String = "JaMak Edit") -> String {
         let kept = segments.filter(\.isKept)
         guard !kept.isEmpty else { return "" }
 
@@ -560,7 +560,7 @@ struct ExportService {
         segments: [Segment],
         videoInfo: VideoInfo,
         videoURL: URL,
-        title: String = "SilenciApp Edit"
+        title: String = "JaMak Edit"
     ) -> String {
         let kept = segments.filter(\.isKept)
         guard !kept.isEmpty else { return "" }

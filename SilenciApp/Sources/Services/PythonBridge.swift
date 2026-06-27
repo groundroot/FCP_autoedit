@@ -183,11 +183,13 @@ final class PythonBridge {
     func start() throws {
         guard !isRunning else { return }
 
-        // Prefer .venv/bin/python in projectRoot if it exists.
+        #if !APPSTORE
+        // Prefer .venv/bin/python in projectRoot for local development builds.
         let venvPython = (projectRoot as NSString).appendingPathComponent(".venv/bin/python")
         if FileManager.default.isExecutableFile(atPath: venvPython) {
             pythonPath = venvPython
         }
+        #endif
 
         let proc = Process()
         let stdin = Pipe()
@@ -198,14 +200,20 @@ final class PythonBridge {
         proc.arguments = ["-m", "silence_cutter.server"]
         proc.currentDirectoryURL = URL(fileURLWithPath: projectRoot)
 
-        // Ensure Homebrew / common tool paths are available.
-        // macOS .app bundles inherit a minimal PATH that excludes /opt/homebrew/bin,
-        // causing ffprobe/ffmpeg lookups to fail.
+        // Keep model downloads and cache files inside the app container for sandboxed builds.
+        AppPaths.createRuntimeDirectoriesIfNeeded()
         var env = ProcessInfo.processInfo.environment
+        env["HF_HOME"] = AppPaths.huggingFaceHomeDir.path
+
+        #if !APPSTORE
+        // Direct builds can still use locally installed developer tools.
         let extraPaths = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/homebrew/sbin"]
         let currentPath = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
         let combined = (extraPaths + [currentPath]).joined(separator: ":")
         env["PATH"] = combined
+        #else
+        env["PATH"] = env["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        #endif
         proc.environment = env
 
         proc.standardInput = stdin

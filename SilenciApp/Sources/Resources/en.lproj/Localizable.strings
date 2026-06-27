@@ -126,9 +126,24 @@
 
 // MARK: - Settings Language
 "settings.app_language" = "App Language";
+"settings.language_system" = "System Default";
 "settings.restart_hint" = "Restart the app to fully apply changes";
 
+// MARK: - Speech Languages
+"speech_language.korean" = "Korean";
+"speech_language.english" = "English";
+"speech_language.japanese" = "Japanese";
+"speech_language.chinese" = "Chinese";
+"speech_language.german" = "German";
+"speech_language.french" = "French";
+"speech_language.spanish" = "Spanish";
+"speech_language.italian" = "Italian";
+"speech_language.portuguese" = "Portuguese";
+
 // MARK: - Text Based Editor
+"editor.transcript" = "Transcript";
+"editor.kept_words" = "%d/%d kept";
+"editor.removed_words" = "%d removed";
 "editor.auto_scroll" = "Auto-scroll";
 "editor.empty_title" = "Open and analyze a video";
 "editor.empty_subtitle" = "Deleting text automatically removes the corresponding video segment";
@@ -166,7 +181,7 @@
 "model.downloaded" = "Available";
 "model.retry" = "Retry";
 "model.refresh" = "Refresh";
-"model.cache_hint" = "Models are stored in ~/.cache/huggingface";
+"model.cache_hint" = "Models are stored in JaMak app data";
 "model.manage" = "Manage AI Models";
 
 // MARK: - StoreKit

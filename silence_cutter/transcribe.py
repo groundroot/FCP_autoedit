@@ -1,8 +1,10 @@
-"""Qwen3-ASR + ForcedAligner를 이용한 음성 인식 및 단어별 타임스탬프"""
+"""Qwen3-ASR/Whisper를 이용한 음성 인식 및 단어별 타임스탬프"""
 
 from __future__ import annotations
 
 import contextlib
+import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
@@ -51,8 +53,44 @@ def _compact_text(text: str) -> str:
     return "".join(ch for ch in text if ch.isalnum())
 
 
+def _is_faster_whisper_model(model_id: str) -> bool:
+    return "faster-whisper" in model_id.lower()
+
+
+def _language_code(language: str) -> str | None:
+    """Map app language labels to Whisper ISO-639-1 language codes."""
+    normalized = language.strip().lower()
+    if not normalized or normalized == "auto":
+        return None
+    return {
+        "korean": "ko",
+        "english": "en",
+        "japanese": "ja",
+        "chinese": "zh",
+        "german": "de",
+        "french": "fr",
+        "spanish": "es",
+        "italian": "it",
+        "portuguese": "pt",
+    }.get(normalized, normalized)
+
+
+def _cached_hf_snapshot(model_id: str) -> str | None:
+    """Return a local HuggingFace snapshot path for model_id if it was downloaded."""
+    hf_home = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+    folder = "models--" + model_id.replace("/", "--")
+    snapshots_dir = Path(hf_home) / "hub" / folder / "snapshots"
+    if not snapshots_dir.is_dir():
+        return None
+
+    snapshots = [path for path in snapshots_dir.iterdir() if path.is_dir()]
+    if not snapshots:
+        return None
+    return str(max(snapshots, key=lambda path: path.stat().st_mtime))
+
+
 class Transcriber:
-    """Qwen3-ASR + ForcedAligner 래퍼"""
+    """Qwen3-ASR + ForcedAligner 또는 faster-whisper 래퍼"""
 
     def __init__(
         self,
@@ -64,30 +102,63 @@ class Transcriber:
         self.language = language
         self._asr_model_id = asr_model
         self._aligner_model_id = aligner_model
+        self._backend = "whisper" if _is_faster_whisper_model(asr_model) else "qwen"
         self._asr = None
         self._aligner = None
         self._on_progress = on_progress
 
     def _ensure_loaded(self):
         if self._asr is None:
+            if self._backend == "whisper":
+                self._load_whisper()
+                return
+
             from mlx_audio.stt import load
 
             patch_factory = self._patch_tqdm() if self._on_progress else None
 
             if self._on_progress:
                 self._on_progress("model_download", 0, f"ASR 모델 준비 중: {self._asr_model_id}")
-            print(f"[transcribe] ASR 모델 로딩: {self._asr_model_id}", file=__import__('sys').stderr)
+            print(f"[transcribe] ASR 모델 로딩: {self._asr_model_id}", file=sys.stderr)
             with (patch_factory() if patch_factory else _noop_ctx()):
                 self._asr = load(self._asr_model_id)
 
             if self._on_progress:
                 self._on_progress("model_download", 50, f"Aligner 모델 준비 중: {self._aligner_model_id}")
-            print(f"[transcribe] ForcedAligner 로딩: {self._aligner_model_id}", file=__import__('sys').stderr)
+            print(f"[transcribe] ForcedAligner 로딩: {self._aligner_model_id}", file=sys.stderr)
             with (patch_factory() if patch_factory else _noop_ctx()):
                 self._aligner = load(self._aligner_model_id)
 
             if self._on_progress:
                 self._on_progress("model_download", 100, "모델 로딩 완료")
+
+    def _load_whisper(self):
+        """Load a downloaded faster-whisper model from the app HuggingFace cache."""
+        local_snapshot = _cached_hf_snapshot(self._asr_model_id)
+        if not local_snapshot:
+            raise RuntimeError(
+                "Whisper 모델이 아직 다운로드되지 않았습니다. "
+                "모델 관리 화면에서 Whisper Small을 먼저 다운로드해 주세요."
+            )
+
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "faster-whisper가 설치되어 있지 않습니다. Python 런타임을 다시 준비해 주세요."
+            ) from exc
+
+        if self._on_progress:
+            self._on_progress("model_download", 0, f"Whisper 모델 준비 중: {self._asr_model_id}")
+        print(f"[transcribe] Whisper 모델 로딩: {local_snapshot}", file=sys.stderr)
+        self._asr = WhisperModel(
+            local_snapshot,
+            device="cpu",
+            compute_type="int8",
+            local_files_only=True,
+        )
+        if self._on_progress:
+            self._on_progress("model_download", 100, "Whisper 모델 로딩 완료")
 
     def _patch_tqdm(self):
         """huggingface_hub.snapshot_download에 커스텀 tqdm_class를 monkey-patch.
@@ -166,6 +237,9 @@ class Transcriber:
         # 구간 오디오 추출
         segment_audio = _load_segment_audio(audio_path, seg_start, seg_end)
 
+        if self._backend == "whisper":
+            return self._transcribe_segment_whisper(segment_audio, seg_start, seg_end)
+
         # ASR: 텍스트 생성
         asr_result = self._asr.generate(segment_audio, language=self.language)
         text = asr_result.text.strip()
@@ -217,6 +291,68 @@ class Transcriber:
                 seg_start=seg_start,
                 seg_end=seg_end,
                 text=text,
+                words=[],
+            )
+
+        return TranscribedSegment(
+            seg_start=seg_start,
+            seg_end=seg_end,
+            text=text,
+            words=words,
+        )
+
+    def _transcribe_segment_whisper(
+        self,
+        segment_audio: np.ndarray,
+        seg_start: float,
+        seg_end: float,
+    ) -> TranscribedSegment:
+        """Transcribe one segment with faster-whisper word timestamps."""
+        language = _language_code(self.language)
+        segments_iter, _info = self._asr.transcribe(
+            segment_audio,
+            language=language,
+            word_timestamps=True,
+            vad_filter=False,
+            condition_on_previous_text=False,
+        )
+
+        text_parts: list[str] = []
+        words: list[WordTimestamp] = []
+        for segment in segments_iter:
+            segment_text = (segment.text or "").strip()
+            if segment_text:
+                text_parts.append(segment_text)
+
+            segment_words = getattr(segment, "words", None) or []
+            for item in segment_words:
+                token = (getattr(item, "word", "") or "").strip()
+                start = getattr(item, "start", None)
+                end = getattr(item, "end", None)
+                if not token or start is None or end is None or end <= start:
+                    continue
+                words.append(WordTimestamp(
+                    text=token,
+                    start=seg_start + float(start),
+                    end=seg_start + float(end),
+                ))
+
+            if not segment_words and segment_text:
+                start = getattr(segment, "start", 0.0) or 0.0
+                end = getattr(segment, "end", seg_end - seg_start) or (seg_end - seg_start)
+                if end > start:
+                    words.append(WordTimestamp(
+                        text=segment_text,
+                        start=seg_start + float(start),
+                        end=seg_start + float(end),
+                    ))
+
+        text = " ".join(text_parts).strip()
+        if not text:
+            return TranscribedSegment(
+                seg_start=seg_start,
+                seg_end=seg_end,
+                text="",
                 words=[],
             )
 
